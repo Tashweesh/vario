@@ -108,13 +108,13 @@ update public.contacts c set
   closed_at = case when c.stage = 'closed' then now() - interval '7 days' end;
 `);
 
-// Viewings: Saturday→Tuesday of the coming week, Erbil time.
+// Viewings: from today over the next working days (Friday skipped), Erbil time.
 const DOW = { 'السبت': 0, 'الأحد': 1, 'الاثنين': 2, 'الثلاثاء': 3, 'الأربعاء': 4 };
 const VST = { 'مؤكدة': 'confirmed', 'بانتظار التأكيد': 'pending', 'إعادة معاينة': 'second' };
-out.push(`with sat as (select (current_date + ((6 - extract(dow from current_date)::int + 7) % 7))::date as d)
-insert into public.viewings (contact_id, listing_id, agent_id, scheduled_at, status)
-select v.contact_id::uuid, v.listing_id, v.agent_id, ((sat.d + v.off) + v.t::time) at time zone 'Asia/Baghdad', v.status
-from sat, (values
+out.push(`insert into public.viewings (contact_id, listing_id, agent_id, scheduled_at, status)
+select v.contact_id::uuid, v.listing_id, v.agent_id,
+  ((current_date + v.off + case when extract(dow from current_date + v.off) = 5 then 1 else 0 end) + v.t::time) at time zone 'Asia/Baghdad', v.status
+from (values
   ${D.viewings.map((v) => `(${q(cid(v.contact))}, ${q(v.listing)}, ${q(v.agent)}, ${DOW[v.day]}, ${q(v.time)}, ${q(VST[v.status])})`).join(',\n  ')}
 ) as v(contact_id, listing_id, agent_id, off, t, status);
 `);

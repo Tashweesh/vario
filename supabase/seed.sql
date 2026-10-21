@@ -691,10 +691,10 @@ update public.contacts c set
   first_response_at = (select min(created_at) from public.activities a where a.contact_id = c.id and a.kind in ('note', 'call')),
   closed_at = case when c.stage = 'closed' then now() - interval '7 days' end;
 
-with sat as (select (current_date + ((6 - extract(dow from current_date)::int + 7) % 7))::date as d)
 insert into public.viewings (contact_id, listing_id, agent_id, scheduled_at, status)
-select v.contact_id::uuid, v.listing_id, v.agent_id, ((sat.d + v.off) + v.t::time) at time zone 'Asia/Baghdad', v.status
-from sat, (values
+select v.contact_id::uuid, v.listing_id, v.agent_id,
+  ((current_date + v.off + case when extract(dow from current_date + v.off) = 5 then 1 else 0 end) + v.t::time) at time zone 'Asia/Baghdad', v.status
+from (values
   ('00000000-0000-4000-9000-000000000003', 'VS-1002', 'rebwar', 0, '11:00', 'confirmed'),
   ('00000000-0000-4000-9000-000000000004', 'VS-1008', 'rebwar', 0, '14:30', 'confirmed'),
   ('00000000-0000-4000-9000-000000000002', 'VR-5001', 'dilshad', 1, '10:00', 'pending'),

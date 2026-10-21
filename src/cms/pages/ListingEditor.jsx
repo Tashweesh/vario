@@ -10,8 +10,9 @@ import { PlanBar } from '../../site/parts.jsx';
 
 const NUMS = ['beds', 'baths', 'size', 'plot', 'floor', 'total_floors', 'floors', 'terrace', 'frontage', 'age', 'price', 'rent', 'deposit', 'plan_down', 'plan_months', 'plan_handover'];
 const FIELDS = ['deal', 'type', 'area_id', 'project_id', 'agent_id', 'status', 'featured', 'verified', 'hide_price', 'land_use', 'use_type', 'condition', 'view_text', 'features', 'description_ar', 'description_en', 'payment', 'furnishing', 'available', 'plan_source', 'plan_handover_date', 'plan_note', 'video_url', ...NUMS];
-const toForm = (l) => Object.fromEntries(FIELDS.map((k) => [k, l[k] == null ? (k === 'features' ? [] : '') : l[k]]));
-const toRow = (f) => Object.fromEntries(FIELDS.map((k) => [k, NUMS.includes(k) ? (f[k] === '' || f[k] == null ? null : Math.round(+f[k])) : f[k] === '' ? null : f[k]]));
+const BOOLS = ['featured', 'verified', 'hide_price'];
+const toForm = (l) => Object.fromEntries(FIELDS.map((k) => [k, BOOLS.includes(k) ? !!l[k] : l[k] == null ? (k === 'features' ? [] : '') : l[k]]));
+const toRow = (f) => Object.fromEntries(FIELDS.map((k) => [k, BOOLS.includes(k) ? !!f[k] : NUMS.includes(k) ? (f[k] === '' || f[k] == null ? null : Math.round(+f[k])) : f[k] === '' ? null : f[k]]));
 
 export default function ListingEditor() {
   const { id } = useParams();
