@@ -80,7 +80,7 @@ docker compose up -d --build
 
 Repository **secrets**: `SSH_HOST`, `SSH_USER`, `SSH_KEY` (private key), `SSH_PORT` (optional, default 22),
 `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, and `REPO_TOKEN` (a fine-grained PAT with read access, only needed
-while the repo is private). Repository **variables** (optional): `DEPLOY_PATH` (default `/opt/vario`),
+while the repo is private). Repository **variables** (optional): `DEPLOY_PATH` (default `~/vario` of the SSH user),
 `VITE_MAP_TILE_URL`, `VITE_MAP_TILE_ATTR`. The server needs `git` and Docker with the compose plugin, and the SSH
 user must be in the `docker` group.
 

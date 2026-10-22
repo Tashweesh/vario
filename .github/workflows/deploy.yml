@@ -25,6 +25,7 @@ jobs:
           script_stop: true
           script: |
             set -euo pipefail
+            DEPLOY_PATH="${DEPLOY_PATH:-$HOME/vario}"
 
             if [ -n "${REPO_TOKEN:-}" ]; then
               REMOTE="https://x-access-token:${REPO_TOKEN}@github.com/${REPO}.git"
@@ -58,7 +59,7 @@ jobs:
         env:
           REPO: ${{ github.repository }}
           SHA: ${{ github.sha }}
-          DEPLOY_PATH: ${{ vars.DEPLOY_PATH || '/opt/vario' }}
+          DEPLOY_PATH: ${{ vars.DEPLOY_PATH || '' }}
           REPO_TOKEN: ${{ secrets.REPO_TOKEN }}
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
