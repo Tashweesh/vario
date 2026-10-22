@@ -16,6 +16,9 @@ Arabic, right-to-left, responsive (desktop and phone).
 - **Frontend:** React 18, React Router 6, `@supabase/supabase-js` 2, Vite 5. Styling copies the design's inline styles 1:1, plus a small CSS file for hover states.
 - **Backend:** Supabase Postgres + Auth (email/password) + Storage (public `media` bucket). All rules live in the database:
   row-level security, triggers and two RPCs. There is no custom server.
+- **Maps:** Leaflet on OpenStreetMap tiles, no API key. Areas carry a centre (`lat`/`lng`, set by clicking the map in CMS → المناطق);
+  listings and projects may carry their own pin (CMS editors → «الموقع على الخريطة»), otherwise they are counted in their area's pill on `/map`
+  and shown at the area centre marked «موقع تقريبي». Set `VITE_MAP_TILE_URL` / `VITE_MAP_TILE_ATTR` to use another tile provider.
 
 ```
 supabase/migrations/   schema, RLS, triggers, RPCs, storage bucket
@@ -58,6 +61,28 @@ Reset the data at any time with `npx supabase db reset`. After changing `project
    Then open `/login` → «أول مرة؟ فعّل حسابك» with that email. Everyone else is invited from **CMS → المستخدمون والصلاحيات**.
 3. In Supabase **Authentication → URL configuration**, set the site URL and add `https://<your-domain>/login` as a redirect URL (used by password reset).
 4. Build with `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` set, and host `dist/` on any static host. SPA fallbacks are included for Netlify (`public/_redirects`) and Vercel (`vercel.json`).
+
+### Docker
+
+`Dockerfile` builds the site and serves `dist/` with nginx on port 80 (SPA fallback included). `docker-compose.yml`
+names the container `vario`, joins the external `npm_default` network (Nginx Proxy Manager) and publishes port 80 on a
+random host port. Point an NPM proxy host at `http://vario:80`.
+
+```sh
+cp .env.example .env            # VITE_* values are baked in at build time
+docker compose up -d --build
+```
+
+### CI/CD (GitHub Actions)
+
+`.github/workflows/deploy.yml` runs on every push to `main`: it SSHes into the server, clones/updates the repo at
+`DEPLOY_PATH`, writes `.env` from secrets and runs `docker compose build && docker compose up -d`.
+
+Repository **secrets**: `SSH_HOST`, `SSH_USER`, `SSH_KEY` (private key), `SSH_PORT` (optional, default 22),
+`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, and `REPO_TOKEN` (a fine-grained PAT with read access, only needed
+while the repo is private). Repository **variables** (optional): `DEPLOY_PATH` (default `/opt/vario`),
+`VITE_MAP_TILE_URL`, `VITE_MAP_TILE_ATTR`. The server needs `git` and Docker with the compose plugin, and the SSH
+user must be in the `docker` group.
 
 ## Roles and data rules (enforced in Postgres)
 

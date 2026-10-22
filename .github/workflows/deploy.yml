@@ -1,0 +1,66 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          envs: REPO,SHA,DEPLOY_PATH,REPO_TOKEN,VITE_SUPABASE_URL,VITE_SUPABASE_ANON_KEY,VITE_MAP_TILE_URL,VITE_MAP_TILE_ATTR
+          script_stop: true
+          script: |
+            set -euo pipefail
+
+            if [ -n "${REPO_TOKEN:-}" ]; then
+              REMOTE="https://x-access-token:${REPO_TOKEN}@github.com/${REPO}.git"
+            else
+              REMOTE="https://github.com/${REPO}.git"
+            fi
+
+            if [ ! -d "$DEPLOY_PATH/.git" ]; then
+              git clone "$REMOTE" "$DEPLOY_PATH"
+            fi
+            cd "$DEPLOY_PATH"
+            git remote set-url origin "$REMOTE"
+            git fetch --prune origin
+            git checkout --force "$SHA"
+
+            # Build-time config for Vite, read by docker compose from .env
+            umask 077
+            cat > .env <<ENV
+            VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
+            VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
+            VITE_MAP_TILE_URL=${VITE_MAP_TILE_URL:-}
+            VITE_MAP_TILE_ATTR=${VITE_MAP_TILE_ATTR:-}
+            ENV
+
+            docker network inspect npm_default >/dev/null 2>&1 || docker network create npm_default
+            docker compose build --pull
+            docker compose up -d --remove-orphans
+            docker image prune -f >/dev/null
+
+            docker compose ps
+        env:
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+          DEPLOY_PATH: ${{ vars.DEPLOY_PATH || '/opt/vario' }}
+          REPO_TOKEN: ${{ secrets.REPO_TOKEN }}
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_MAP_TILE_URL: ${{ vars.VITE_MAP_TILE_URL }}
+          VITE_MAP_TILE_ATTR: ${{ vars.VITE_MAP_TILE_ATTR }}
