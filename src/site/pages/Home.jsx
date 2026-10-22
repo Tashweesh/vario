@@ -4,7 +4,8 @@ import { useSite } from '../SiteData.jsx';
 import { useDocTitle, useLayout } from '../../lib/hooks.js';
 import { TYPE_GROUPS, count, starSplit } from '../../lib/format.js';
 import { Btn, IconSearch } from '../../components/ui.jsx';
-import { CardGrid, SectionHead, stripes } from '../parts.jsx';
+import { CardGrid, SectionHead } from '../parts.jsx';
+import { MapView, esc } from '../../components/MapView.jsx';
 
 const CAT_ICONS = {
   apartment: 'M6 21V5l6-2 6 2v16M9 8h1M14 8h1M9 12h1M14 12h1M9 16h1M14 16h1',
@@ -144,13 +145,10 @@ export default function Home() {
             </div>
             <Btn style={{ marginTop: 14 }} onClick={() => nav('/areas')}>كل المناطق ←</Btn>
           </div>
-          <button onClick={() => nav('/map')} style={{ position: 'relative', borderRadius: 24, overflow: 'hidden', border: '1px solid #e7e7e3', cursor: 'pointer', minHeight: 360, background: stripes(), padding: 0, whiteSpace: 'nowrap' }}>
-            <div style={{ position: 'absolute', top: 16, insetInlineStart: 16, fontSize: 11, color: '#767a83', fontFamily: 'ui-monospace,monospace', background: '#fff', padding: '4px 8px', borderRadius: 6 }} dir="ltr">map · Erbil</div>
-            {S.areas.map((a) => (
-              <span key={a.id} style={{ position: 'absolute', insetInlineStart: a.left, top: a.top, transform: 'translate(50%,-50%)', height: 28, padding: '0 10px', borderRadius: 999, background: '#fff', border: '1px solid #d8d8d3', boxShadow: '0 2px 8px rgba(0,0,0,.08)', fontSize: 12.5, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap' }}>{a.short}<span style={{ color: '#9da0a7', fontWeight: 500 }}>{a.total}</span></span>
-            ))}
-            <span style={{ position: 'absolute', bottom: 16, insetInlineEnd: 16, height: 40, padding: '0 16px', borderRadius: 12, background: '#1d1e22', color: '#fff', fontWeight: 600, fontSize: 13.5, display: 'inline-flex', alignItems: 'center' }}>افتح الخريطة</span>
-          </button>
+          <MapView height="100%" style={{ minHeight: 360, borderRadius: 24, overflow: 'hidden', border: '1px solid #e7e7e3' }} interactive={false} bounds={S.areas.map((a) => a.pos)} zoom={12} markers={S.areas.map((a) => ({ id: a.id, kind: 'area', lat: a.pos.lat, lng: a.pos.lng, html: `${esc(a.short)} <b>${a.total}</b>`, interactive: false }))}>
+            <button onClick={() => nav('/map')} aria-label="افتح الخريطة" style={{ position: 'absolute', inset: 0, zIndex: 900, background: 'transparent', border: 0, cursor: 'pointer', padding: 0 }} />
+            <span style={{ position: 'absolute', bottom: 16, insetInlineEnd: 16, zIndex: 901, pointerEvents: 'none', height: 40, padding: '0 16px', borderRadius: 12, background: '#1d1e22', color: '#fff', fontWeight: 600, fontSize: 13.5, display: 'inline-flex', alignItems: 'center', whiteSpace: 'nowrap' }}>افتح الخريطة</span>
+          </MapView>
         </div>
       )}
 

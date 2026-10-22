@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useCrm } from '../CrmApp.jsx';
+import { useCrm, ViewingModal } from '../CrmApp.jsx';
 import { useAuth } from '../../lib/auth.jsx';
 import { supabase } from '../../lib/supabase.js';
 import { useDocTitle } from '../../lib/hooks.js';
@@ -19,6 +19,7 @@ export default function Pipeline() {
   const [drag, setDrag] = useState(null);
   const [over, setOver] = useState(null);
   const [local, setLocal] = useState({}); // optimistic stage moves
+  const [viewingFor, setViewingFor] = useState(null); // contact id → schedule-a-viewing dialog
 
   const list = R.contacts.filter((c) => (!mine || c.agent_id === A.me.agent_id) && (!deal || c.deal === deal)).map((c) => (local[c.id] ? { ...c, stage: local[c.id] } : c));
   const drop = async (stage) => {
@@ -29,13 +30,15 @@ export default function Pipeline() {
     const { error } = await supabase.from('contacts').update({ stage, score: stage === 'closed' ? 'won' : c.score === 'won' ? 'warm' : c.score }).eq('id', c.id);
     if (!error) await supabase.from('activities').insert({ contact_id: c.id, kind: 'system', body: `نُقل إلى مرحلة «${STAGES.find((s) => s[0] === stage)[1]}»`, agent_id: A.me.agent_id });
     if (error) toast(error.message, 'error');
+    // dropping on «معاينة» also puts the visit on the calendar; the card stays in the pipeline
+    if (!error && stage === 'viewing') setViewingFor(c.id);
     await R.reload();
     setLocal((s) => { const n = { ...s }; delete n[c.id]; return n; });
   };
 
   return (
     <>
-      <PageTitle sub="اسحب البطاقة بين الأعمدة لتغيير المرحلة" action={<>
+      <PageTitle sub="اسحب البطاقة بين الأعمدة لتغيير المرحلة · إسقاطها في «معاينة» يفتح جدولة الموعد" action={<>
         <Chip on={!mine} onClick={() => setMine(false)}>كل الفريق</Chip>
         <Chip on={mine} onClick={() => setMine(true)}>عملائي فقط</Chip>
         <Chip on={deal === 'sale'} onClick={() => setDeal(deal === 'sale' ? '' : 'sale')}>شراء</Chip>
@@ -65,6 +68,9 @@ export default function Pipeline() {
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: c.agent ? '#767a83' : '#c8102e' }}>{c.agent?.img && <img src={c.agent.img} alt="" style={{ width: 18, height: 18, borderRadius: 999, objectFit: 'cover' }} />}{c.agentName}</span>
                       <span>{c.last}</span>
                     </div>
+                    <span role="button" tabIndex={0} aria-label={`حدد معاينة لـ ${c.name}`} className="h-border"
+                      onClick={(e) => { e.stopPropagation(); setViewingFor(c.id); }} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); setViewingFor(c.id); } }}
+                      style={{ alignSelf: 'flex-start', fontSize: 11.5, color: '#1d1e22', border: '1px solid #d8d8d3', borderRadius: 999, padding: '3px 10px', background: '#f6f6f4' }}>+ معاينة</span>
                   </button>
                 ))}
               </div>
@@ -72,6 +78,7 @@ export default function Pipeline() {
           );
         })}
       </div>
+      {viewingFor && <ViewingModal preset={{ contact_id: viewingFor }} onClose={() => setViewingFor(null)} />}
     </>
   );
 }

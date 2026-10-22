@@ -31,7 +31,7 @@ export default function Contact() {
 
   return (
     <section style={{ paddingTop: 28 }}>
-      <PageHead kicker="تواصل" title="تواصل ويّا ڤايرو" h1Fs={L.h1Fs} sub="فريقنا يرد من السبت للخميس، 9 صباحاً حتى 7 مساءً. اختار الطريقة اللي تريحك." />
+      <PageHead kicker="تواصل" title="تواصل ويّا ڤايرو" h1Fs={L.h1Fs} sub={`ساعات الدوام: ${st.office_hours}. اختار الطريقة اللي تريحك.`} />
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 12, marginTop: 24 }}>
         <a className="h-shadow" href={waLink(st.office_whatsapp, 'مرحبا ڤايرو')} target="_blank" rel="noreferrer" style={card}>
           <span style={{ width: 40, height: 40, borderRadius: 12, background: '#e6f6ee', color: '#0f8a4f', display: 'grid', placeItems: 'center', fontWeight: 700 }}>W</span>
@@ -40,12 +40,12 @@ export default function Contact() {
         </a>
         <a className="h-shadow" href={`tel:${st.office_phone.replace(/[^\d+]/g, '')}`} style={card}>
           <span style={{ width: 40, height: 40, borderRadius: 12, background: '#f6f6f4', display: 'grid', placeItems: 'center' }}><IconPhone /></span>
-          <div><div style={{ fontWeight: 600, fontSize: 16 }}>اتصال</div><div style={{ fontSize: 13, color: '#767a83', marginTop: 2 }}>9 ص – 7 م</div></div>
+          <div><div style={{ fontWeight: 600, fontSize: 16 }}>اتصال</div><div style={{ fontSize: 13, color: '#767a83', marginTop: 2 }}>{st.office_hours}</div></div>
           <div style={{ fontWeight: 600 }} dir="ltr">{st.office_phone}</div>
         </a>
         <button className="h-shadow" style={card} onClick={() => { setF({ ...f, subject: 'زيارة المكتب' }); formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }}>
           <span style={{ width: 40, height: 40, borderRadius: 12, background: '#f6f6f4', display: 'grid', placeItems: 'center' }}><IconPin /></span>
-          <div><div style={{ fontWeight: 600, fontSize: 16 }}>زيارة المكتب</div><div style={{ fontSize: 13, color: '#767a83', marginTop: 2 }}>كولان، شارع الستين</div></div>
+          <div><div style={{ fontWeight: 600, fontSize: 16 }}>زيارة المكتب</div><div style={{ fontSize: 13, color: '#767a83', marginTop: 2 }}>{st.office_address}</div></div>
           <div style={{ fontWeight: 600, fontSize: 13.5 }}>احجز موعد</div>
         </button>
       </div>
@@ -74,8 +74,8 @@ export default function Contact() {
         <div style={{ background: '#f6f6f4', borderRadius: 24, padding: 24 }}>
           <div style={{ fontWeight: 600, fontSize: 16 }}>مكتب ڤايرو</div>
           <div style={{ color: '#5a5e68', fontSize: 14, marginTop: 6, lineHeight: 1.7 }}>{st.office_address}<br />أربيل، إقليم كوردستان</div>
-          <a href="https://maps.google.com/?q=Gulan+Street+Erbil" target="_blank" rel="noreferrer" style={{ display: 'block', marginTop: 14, height: 140, borderRadius: 14, background: stripes('#ecece9', '#e5e5e1'), position: 'relative' }} aria-label="افتح الموقع على الخريطة"><Dot size={14} style={{ boxShadow: 'none' }} /></a>
-          <div style={{ fontSize: 13, color: '#767a83', marginTop: 12 }}>السبت – الخميس · 9:00 – 19:00</div>
+          <a href={st.office_map_url || `https://maps.google.com/?q=${encodeURIComponent(st.office_address + ' Erbil')}`} target="_blank" rel="noreferrer" style={{ display: 'block', marginTop: 14, height: 140, borderRadius: 14, background: stripes('#ecece9', '#e5e5e1'), position: 'relative' }} aria-label="افتح الموقع على الخريطة"><Dot size={14} style={{ boxShadow: 'none' }} /></a>
+          <div style={{ fontSize: 13, color: '#767a83', marginTop: 12 }}>{st.office_hours}</div>
         </div>
       </div>
     </section>

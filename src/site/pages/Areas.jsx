@@ -2,7 +2,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useSite } from '../SiteData.jsx';
 import { useDocTitle, useLayout } from '../../lib/hooks.js';
 import { Btn } from '../../components/ui.jsx';
-import { CardGrid, Crumbs, Dot, H2, PageHead, stripes } from '../parts.jsx';
+import { CardGrid, Crumbs, H2, PageHead } from '../parts.jsx';
+import { MapView } from '../../components/MapView.jsx';
 import NotFound from './NotFound.jsx';
 
 export function Areas() {
@@ -89,10 +90,10 @@ export function Area() {
               <Btn h={42} onClick={() => nav(`/rent?area=${a.id}`)}>{a.rentCount} للإيجار</Btn>
             </div>
           </div>
-          <button onClick={() => nav(`/map?area=${a.id}`)} style={{ height: 160, borderRadius: 18, border: '1px solid #e7e7e3', background: stripes(), position: 'relative', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-            <Dot size={16} />
-            <span style={{ position: 'absolute', bottom: 10, insetInlineStart: 10, fontSize: 12, fontWeight: 600, background: '#fff', padding: '4px 8px', borderRadius: 6 }}>افتح الخريطة</span>
-          </button>
+          <MapView height={160} style={{ borderRadius: 18, overflow: 'hidden', border: '1px solid #e7e7e3' }} interactive={false} center={a.pos} zoom={13} markers={[{ id: a.id, kind: 'dot', lat: a.pos.lat, lng: a.pos.lng, interactive: false }]}>
+            <button onClick={() => nav(`/map?area=${a.id}`)} aria-label="افتح الخريطة" style={{ position: 'absolute', inset: 0, zIndex: 900, background: 'transparent', border: 0, cursor: 'pointer', padding: 0 }} />
+            <span style={{ position: 'absolute', bottom: 10, insetInlineStart: 10, zIndex: 901, pointerEvents: 'none', fontSize: 12, fontWeight: 600, background: '#fff', padding: '4px 8px', borderRadius: 6, boxShadow: '0 2px 8px rgba(0,0,0,.08)' }}>افتح الخريطة</span>
+          </MapView>
         </aside>
       </div>
     </section>

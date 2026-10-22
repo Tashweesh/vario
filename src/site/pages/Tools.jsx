@@ -11,7 +11,7 @@ export function Tools() {
   useDocTitle('الأدوات');
   const L = useLayout();
   const nav = useNavigate();
-  const items = [['/tools/match', 'ڤايرو ماتش', 'جاوب 4 أسئلة ونرتبلك الأنسب', 'ابدأ'], ['/tools/budget', 'مستكشف الميزانية', 'شنو أگدر أشتري بهالمبلغ؟'], ['/tools/rent', 'مختبر الإيجار', 'قدرتك على الإيجار وتكلفة السكن'], ['/tools/payment', 'مختبر الدفع', 'خطط شراءك بالتقسيط'], ['/compare', 'المقارنة', 'جنب بعض، نفس النوع ويا نفس النوع'], ['/tools/tour', 'الجولة الذكية', 'نظّم يوم المعاينات'], ['/tools/tower', 'مستكشف البرج', 'اختار الطابق والوحدة بالشكل'], ['/tools/atlas', 'أطلس العقار', 'أسعار المتر حسب المنطقة'], ['/guides', 'أدلة المناطق والعقار', 'اعرف السوق قبل ما تقرر']];
+  const items = [['/tools/match', 'ڤايرو ماتش', 'جاوب 4 أسئلة ونرتبلك الأنسب', 'ابدأ'], ['/tools/budget', 'مستكشف الميزانية', 'شنو أگدر أشتري بهالمبلغ؟'], ['/tools/rent', 'مختبر الإيجار', 'قدرتك على الإيجار وتكلفة السكن'], ['/tools/payment', 'مختبر الدفع', 'خطط شراءك بالتقسيط'], ['/compare', 'المقارنة', 'جنب بعض، نفس النوع ويا نفس النوع'], ['/tools/tour', 'الجولة الذكية', 'نظّم يوم المعاينات'], ['/tools/tower', 'مستكشف البرج', 'اختار الطابق والوحدة بالشكل'], ['/tools/atlas', 'أطلس العقار', 'أسعار المتر حسب المنطقة'], ['/guides', 'أدلة المناطق والعقار', 'اعرف السوق قبل ما تقرر', 'قريباً']];
   return (
     <section style={{ paddingTop: 28 }}>
       <PageHead kicker="الأدوات" title="قرّر وأنت فاهم" h1Fs={L.h1Fs} sub="أدوات بسيطة تساعدك تفهم السوق وميزانيتك قبل ما تتصل بأي أحد." />
@@ -131,7 +131,7 @@ export function Atlas() {
   const rows = [...S.areas].sort((a, b) => b.ppm - a.ppm);
   return (
     <section style={{ paddingTop: 28 }}>
-      <PageHead kicker="الأدوات" title="أطلس العقار" h1Fs={L.h1Fs} sub="متوسط سعر المتر للبيع حسب المنطقة، من عقارات ڤايرو خلال آخر 90 يوم." />
+      <PageHead kicker="الأدوات" title="أطلس العقار" h1Fs={L.h1Fs} sub="متوسط سعر المتر للبيع حسب المنطقة، حسب تقديرات فريق ڤايرو." />
       <div style={{ border: '1px solid #e7e7e3', borderRadius: 24, padding: L.phone ? 18 : 28, marginTop: 24, display: 'flex', flexDirection: 'column', gap: 14 }}>
         {rows.map((a) => (
           <button key={a.id} onClick={() => nav(a.href)} style={{ display: 'grid', gridTemplateColumns: L.phone ? '84px 1fr 72px' : '130px 1fr 90px', gap: L.phone ? 8 : 14, alignItems: 'center', border: 0, background: 'transparent', padding: 0, cursor: 'pointer', textAlign: 'start' }}>
@@ -145,26 +145,26 @@ export function Atlas() {
   );
 }
 
-const GUIDES = [
-  ['https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=900&q=70', 'دليل الشراء', 'كيف تشتري عقار بأربيل خطوة بخطوة', '8 دقائق قراءة', '/buy'],
-  ['https://images.unsplash.com/photo-1554995207-c18c203602cb?auto=format&fit=crop&w=900&q=70', 'دليل التقسيط', 'شنو تسأل المطوّر قبل ما توقّع', '6 دقائق قراءة', '/tools/payment'],
-  ['https://images.unsplash.com/photo-1449824913935-59a10b8d2000?auto=format&fit=crop&w=900&q=70', 'دليل منطقة', 'عينكاوة بالتفصيل: السكن والمدارس والأسعار', '10 دقائق قراءة', '/areas/ankawa'],
-  ['https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=900&q=70', 'دليل المؤجّر', 'عقد الإيجار: شنو لازم يكون مكتوب', '5 دقائق قراءة', '/sell?mode=rent'],
-];
 export function Guides() {
   useDocTitle('الأدلة');
   const L = useLayout();
   const nav = useNavigate();
+  const soon = [['دليل الشراء', 'كيف تشتري عقار بأربيل خطوة بخطوة'], ['دليل التقسيط', 'شنو تسأل المطوّر قبل ما توقّع'], ['أدلة المناطق', 'كل منطقة بالتفصيل: السكن والمدارس والأسعار'], ['دليل المؤجّر', 'عقد الإيجار: شنو لازم يكون مكتوب']];
   return (
     <section style={{ paddingTop: 28 }}>
-      <PageHead kicker="اعرف السوق" title="أدلة المناطق والعقار" h1Fs={L.h1Fs} />
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))', gap: 20, marginTop: 24 }}>
-        {GUIDES.map(([img, k, t, m, to]) => (
-          <button key={t} className="h-shadow-lg" onClick={() => nav(to)} style={{ textAlign: 'start', border: '1px solid #e7e7e3', borderRadius: 20, overflow: 'hidden', background: '#fff', cursor: 'pointer', padding: 0 }}>
-            <div style={{ aspectRatio: '16/9', background: '#f6f6f4' }}><img src={img} alt="" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} /></div>
-            <div style={{ padding: 18 }}><div style={{ fontSize: 12, color: '#c8102e', fontWeight: 600 }}>{k}</div><div style={{ fontWeight: 600, fontSize: 17, marginTop: 4 }}>{t}</div><div style={{ fontSize: 13, color: '#767a83', marginTop: 6 }}>{m}</div></div>
-          </button>
+      <PageHead kicker="اعرف السوق" title="أدلة المناطق والعقار" h1Fs={L.h1Fs} sub="الأدلة قيد الإعداد وراح تنزل قريباً. لحد ما تجهز، تقدر تستكشف المناطق والأدوات." />
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(260px,1fr))', gap: 12, marginTop: 24 }}>
+        {soon.map(([t, d]) => (
+          <div key={t} style={{ ...toolCard, cursor: 'default', background: '#f6f6f4', color: '#5a5e68' }}>
+            <div><div style={{ fontWeight: 600, fontSize: 18, color: '#1d1e22' }}>{t}</div><div style={{ fontSize: 13.5, color: '#767a83', marginTop: 4 }}>{d}</div></div>
+            <span style={{ fontSize: 12, fontWeight: 600, color: '#767a83', border: '1px solid #d8d8d3', borderRadius: 999, padding: '4px 10px', alignSelf: 'flex-start' }}>قريباً</span>
+          </div>
         ))}
+      </div>
+      <div style={{ display: 'flex', gap: 8, marginTop: 24, flexWrap: 'wrap' }}>
+        <Btn kind="dark" onClick={() => nav('/areas')}>استكشف المناطق</Btn>
+        <Btn onClick={() => nav('/tools')}>الأدوات</Btn>
+        <Btn onClick={() => nav('/contact')}>اسأل فريق ڤايرو</Btn>
       </div>
     </section>
   );

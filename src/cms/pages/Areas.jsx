@@ -4,6 +4,7 @@ import { supabase, q, uploadMedia } from '../../lib/supabase.js';
 import { useDocTitle } from '../../lib/hooks.js';
 import { usd } from '../../lib/format.js';
 import { Btn, Field, Modal, useToast } from '../../components/ui.jsx';
+import { ERBIL, LocationPicker } from '../../components/MapView.jsx';
 import { PageTitle, ScrollX, TABLE, editBtn, thead, trow } from '../../staff/Shell.jsx';
 
 const COLS = '56px minmax(160px,1.4fr) 1.4fr 120px 110px 110px 70px';
@@ -40,7 +41,7 @@ function AreaModal({ a, onClose }) {
   const C = useCms();
   const toast = useToast();
   const isNew = !a.id;
-  const [f, setF] = useState({ id: '', name: '', short: '', vibe: '', description: '', ppm: 0, rent: 0, img: '', x: 50, y: 50, tags: [], dna: { family: 5, convenience: 5, green: 5, dining: 5, growth: 5, quiet: 5 }, ...a, tagsText: (a.tags || []).join('، ') });
+  const [f, setF] = useState({ id: '', name: '', short: '', vibe: '', description: '', ppm: 0, rent: 0, img: '', lat: ERBIL.lat, lng: ERBIL.lng, tags: [], dna: { family: 5, convenience: 5, green: 5, dining: 5, growth: 5, quiet: 5 }, ...a, tagsText: (a.tags || []).join('، ') });
   const [busy, setBusy] = useState(false);
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
   const used = !isNew && (C.listings.some((l) => l.area_id === a.id) || C.projects.some((p) => p.area_id === a.id));
@@ -48,7 +49,7 @@ function AreaModal({ a, onClose }) {
     e.preventDefault();
     setBusy(true);
     try {
-      const row = { name: f.name.trim(), short: f.short.trim() || f.name.trim(), vibe: f.vibe, description: f.description, ppm: +f.ppm || 0, rent: +f.rent || 0, img: f.img || null, x: Math.min(100, Math.max(0, +f.x)), y: Math.min(100, Math.max(0, +f.y)), tags: f.tagsText.split(/[،,]/).map((t) => t.trim()).filter(Boolean), dna: Object.fromEntries(Object.keys(DNA).map((k) => [k, +f.dna[k]])) };
+      const row = { name: f.name.trim(), short: f.short.trim() || f.name.trim(), vibe: f.vibe, description: f.description, ppm: +f.ppm || 0, rent: +f.rent || 0, img: f.img || null, lat: +f.lat, lng: +f.lng, tags: f.tagsText.split(/[،,]/).map((t) => t.trim()).filter(Boolean), dna: Object.fromEntries(Object.keys(DNA).map((k) => [k, +f.dna[k]])) };
       if (isNew) {
         const id = f.id.trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
         if (!id) throw new Error('أدخل معرّف المنطقة بالإنجليزي (مثلاً dream-city)');
@@ -88,8 +89,9 @@ function AreaModal({ a, onClose }) {
         {Object.entries(DNA).map(([k, t]) => (
           <Field key={k} label={`${t}: ${f.dna[k]}`}><input type="range" min="0" max="10" value={f.dna[k]} onChange={(e) => setF({ ...f, dna: { ...f.dna, [k]: +e.target.value } })} /></Field>
         ))}
-        <Field label="موقعها على الخريطة — أفقي %" hint="0 = يمين، 100 = يسار"><input className="inp-sm" type="number" min="0" max="100" value={f.x} onChange={set('x')} /></Field>
-        <Field label="عمودي %" hint="0 = أعلى، 100 = أسفل"><input className="inp-sm" type="number" min="0" max="100" value={f.y} onChange={set('y')} /></Field>
+        <Field label="مركز المنطقة على الخريطة" style={{ gridColumn: '1/-1' }}>
+          <LocationPicker value={{ lat: f.lat, lng: f.lng }} onChange={(p) => p && setF((s) => ({ ...s, lat: p.lat, lng: p.lng }))} height={220} hint="العقارات والمشاريع التي بدون موقع دقيق تظهر عند هذه النقطة" />
+        </Field>
         <div style={{ gridColumn: '1/-1', display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
           {!isNew ? <Btn style={{ color: '#c8102e' }} disabled={used} title={used ? 'مرتبطة بعقارات أو مشاريع' : undefined} onClick={del}>حذف</Btn> : <span />}
           <Btn type="submit" kind="red" disabled={busy}>حفظ</Btn>

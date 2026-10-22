@@ -5,11 +5,13 @@ import { supabase } from '../../lib/supabase.js';
 import { useDocTitle, useLayout } from '../../lib/hooks.js';
 import { dayLabel } from '../../lib/format.js';
 import { Btn, Field, Modal, Spinner, useToast } from '../../components/ui.jsx';
-import { CardGrid, Crumbs, Dot, H2, LeadModal, PlanBar, Stat, Tag, dayOptions, stripes, waLink } from '../parts.jsx';
+import { CardGrid, Crumbs, H2, LeadModal, PlanBar, Stat, Tag, dayOptions, waLink } from '../parts.jsx';
+import { MapView, directionsUrl } from '../../components/MapView.jsx';
 import NotFound from './NotFound.jsx';
 
 const pill = { height: 28, padding: '0 12px', borderRadius: 999, background: '#f6f6f4', fontSize: 12.5, fontWeight: 600, display: 'inline-flex', alignItems: 'center', whiteSpace: 'nowrap' };
 const img = { width: '100%', height: '100%', objectFit: 'cover', display: 'block', cursor: 'zoom-in' };
+const mapBtn = { height: 36, padding: '0 12px', borderRadius: 10, border: 0, background: '#1d1e22', color: '#fff', fontSize: 12.5, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', whiteSpace: 'nowrap' };
 
 export default function Property() {
   const { id } = useParams();
@@ -140,10 +142,13 @@ export default function Property() {
             </>
           )}
           <H2>الموقع</H2>
-          <button onClick={() => nav(`/map?deal=${l.deal}&area=${l.area_id}`)} style={{ width: '100%', height: 260, borderRadius: 18, border: '1px solid #e7e7e3', background: stripes(), position: 'relative', cursor: 'pointer', padding: 0, whiteSpace: 'nowrap' }}>
-            <Dot />
-            <span style={{ position: 'absolute', bottom: 14, insetInlineStart: 14, background: '#fff', borderRadius: 10, padding: '8px 12px', fontSize: 13, fontWeight: 600, boxShadow: '0 2px 8px rgba(0,0,0,.08)' }}>{l.areaName} · {l.area.vibe}</span>
-          </button>
+          <MapView height={260} style={{ borderRadius: 18, overflow: 'hidden', border: '1px solid #e7e7e3' }} center={l.pos} zoom={l.hasPin ? 15 : 13} scrollZoom={false} markers={[{ id: l.id, kind: 'dot', approx: !l.hasPin, lat: l.pos.lat, lng: l.pos.lng, interactive: false }]}>
+            <div style={{ position: 'absolute', bottom: 14, insetInlineStart: 14, zIndex: 900, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+              <span style={{ background: '#fff', borderRadius: 10, padding: '8px 12px', fontSize: 13, fontWeight: 600, boxShadow: '0 2px 8px rgba(0,0,0,.08)' }}>{l.areaName} · {l.hasPin ? l.area.vibe : 'موقع تقريبي'}</span>
+              <button onClick={() => nav(`/map?deal=${l.deal}&area=${l.area_id}`)} style={mapBtn}>افتح الخريطة</button>
+              {l.hasPin && <a href={directionsUrl(l.pos)} target="_blank" rel="noreferrer" style={mapBtn}>الاتجاهات ↗</a>}
+            </div>
+          </MapView>
           {similar.length > 0 && (<><H2 m="40px 0 16px">عقارات مشابهة</H2><CardGrid list={similar} min={230} gap={16} /></>)}
         </div>
 
@@ -157,7 +162,7 @@ export default function Property() {
             ) : (
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <TeamMark />
-                <div><div style={{ fontWeight: 600, fontSize: 15 }}>فريق ڤايرو</div><div style={{ fontSize: 12.5, color: '#767a83' }}>نرد خلال دقائق · 9 ص – 7 م</div></div>
+                <div><div style={{ fontWeight: 600, fontSize: 15 }}>فريق ڤايرو</div><div style={{ fontSize: 12.5, color: '#767a83' }}>{S.settings.office_hours}</div></div>
               </div>
             )}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 18 }}>

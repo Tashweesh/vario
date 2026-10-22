@@ -7,12 +7,14 @@ import { useDocTitle } from '../../lib/hooks.js';
 import { CONDITIONS, FURNISHING, LISTING_FEATURES, PAYMENT_AR, STATUS, TYPE_AR, ago, listingPlan, listingTitle, usd } from '../../lib/format.js';
 import { Btn, Card, Field, Seg, Spinner, StatusPill, Toggle, useToast } from '../../components/ui.jsx';
 import { PlanBar } from '../../site/parts.jsx';
+import { LocationPicker } from '../../components/MapView.jsx';
 
 const NUMS = ['beds', 'baths', 'size', 'plot', 'floor', 'total_floors', 'floors', 'terrace', 'frontage', 'age', 'price', 'rent', 'deposit', 'plan_down', 'plan_months', 'plan_handover'];
-const FIELDS = ['deal', 'type', 'area_id', 'project_id', 'agent_id', 'status', 'featured', 'verified', 'hide_price', 'land_use', 'use_type', 'condition', 'view_text', 'features', 'description_ar', 'description_en', 'payment', 'furnishing', 'available', 'plan_source', 'plan_handover_date', 'plan_note', 'video_url', ...NUMS];
+const GEO = ['lat', 'lng'];
+const FIELDS = ['deal', 'type', 'area_id', 'project_id', 'agent_id', 'status', 'featured', 'verified', 'hide_price', 'land_use', 'use_type', 'condition', 'view_text', 'features', 'description_ar', 'description_en', 'payment', 'furnishing', 'available', 'plan_source', 'plan_handover_date', 'plan_note', 'video_url', ...GEO, ...NUMS];
 const BOOLS = ['featured', 'verified', 'hide_price'];
 const toForm = (l) => Object.fromEntries(FIELDS.map((k) => [k, BOOLS.includes(k) ? !!l[k] : l[k] == null ? (k === 'features' ? [] : '') : l[k]]));
-const toRow = (f) => Object.fromEntries(FIELDS.map((k) => [k, BOOLS.includes(k) ? !!f[k] : NUMS.includes(k) ? (f[k] === '' || f[k] == null ? null : Math.round(+f[k])) : f[k] === '' ? null : f[k]]));
+const toRow = (f) => Object.fromEntries(FIELDS.map((k) => [k, BOOLS.includes(k) ? !!f[k] : GEO.includes(k) ? (f[k] === '' || f[k] == null ? null : +(+f[k]).toFixed(6)) : NUMS.includes(k) ? (f[k] === '' || f[k] == null ? null : Math.round(+f[k])) : f[k] === '' ? null : f[k]]));
 
 export default function ListingEditor() {
   const { id } = useParams();
@@ -204,6 +206,9 @@ function Details({ f, set, setF, C, A, l, priv, setPriv }) {
           ) : (
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 10, border: '1px solid #d8d8d3', borderRadius: 10 }}>{C.G[f.agent_id]?.img && <img src={C.G[f.agent_id].img} alt="" style={{ width: 34, height: 34, borderRadius: 999, objectFit: 'cover' }} />}<div style={{ flex: 1, fontSize: 13.5, fontWeight: 600 }}>{C.G[f.agent_id]?.name || '—'}</div></div>
           )}
+        </Card>
+        <Card pad={18}><div style={{ fontWeight: 600, marginBottom: 12 }}>الموقع على الخريطة</div>
+          <LocationPicker value={f.lat !== '' && f.lng !== '' ? { lat: f.lat, lng: f.lng } : null} fallback={C.A[f.area_id]} clearable height={200} onChange={(p) => setF((s) => ({ ...s, lat: p ? p.lat : '', lng: p ? p.lng : '' }))} hint="بدون تحديد، يظهر العقار ضمن منطقته على الخريطة العامة" />
         </Card>
         <Card pad={18}><div style={{ fontWeight: 600, marginBottom: 12 }}>المالك (داخلي)</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>

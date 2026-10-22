@@ -5,20 +5,20 @@ import { useDocTitle, useLayout } from '../../lib/hooks.js';
 import { dayLabel } from '../../lib/format.js';
 import { Btn } from '../../components/ui.jsx';
 import { LeadModal, PageHead, dayOptions } from '../parts.jsx';
+import { ERBIL, MapView, kmBetween } from '../../components/MapView.jsx';
 
-const KM_PER_PCT = 0.28; // schematic map: ~28 km across Erbil
 const VISIT_MIN = 40;
 
-// Orders saved listings by nearest neighbour on the area map, starting from the most central one.
+// Orders saved listings by nearest neighbour (road distance ≈ 1.3 × straight line), starting from the city centre.
 function plan(cards) {
   const left = [...cards];
   const route = [];
-  let cur = { x: 50, y: 50 };
+  let cur = ERBIL;
   while (left.length) {
-    left.sort((a, b) => dist(cur, a.area) - dist(cur, b.area));
+    left.sort((a, b) => kmBetween(cur, a.pos) - kmBetween(cur, b.pos));
     const next = left.shift();
-    route.push({ l: next, km: route.length ? dist(cur, next.area) * KM_PER_PCT : 0 });
-    cur = next.area;
+    route.push({ l: next, km: route.length ? kmBetween(cur, next.pos) * 1.3 : 0 });
+    cur = next.pos;
   }
   let t = 10 * 60;
   return route.map((r, i) => {
@@ -29,8 +29,6 @@ function plan(cards) {
     return { ...r, drive, time: `${String(Math.floor(at / 60)).padStart(2, '0')}:${String(at % 60).padStart(2, '0')}` };
   });
 }
-const dist = (a, b) => Math.hypot((a.x ?? 50) - (b.x ?? 50), (a.y ?? 50) - (b.y ?? 50));
-
 export default function Tour() {
   useDocTitle('الجولة الذكية');
   const S = useSite();
@@ -51,6 +49,9 @@ export default function Tour() {
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: L.sideCols, gap: 28, marginTop: 24, alignItems: 'start' }}>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <MapView height={L.phone ? 240 : 320} style={{ borderRadius: 20, overflow: 'hidden', border: '1px solid #e7e7e3', marginBottom: 20 }} scrollZoom={false} bounds={route.map((r) => r.l.pos)} zoom={14} maxZoom={15}
+              markers={route.map((r, i) => ({ id: r.l.id, kind: 'num', lat: r.l.pos.lat, lng: r.l.pos.lng, html: String(i + 1), onClick: () => nav(r.l.href) }))}
+              lines={[{ id: 'route', points: route.map((r) => r.l.pos), color: '#c8102e', dash: '6 6' }]} />
             {route.map(({ l, time, drive }, i) => (
               <div key={l.id} style={{ display: 'grid', gridTemplateColumns: '70px 1fr', gap: 16 }}>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}><span style={{ fontSize: 13, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{time}</span><span style={{ flex: 1, width: 2, background: '#e7e7e3', margin: '6px 0' }} /></div>

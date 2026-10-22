@@ -1,6 +1,10 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { supabase } from '../lib/supabase.js';
 import { AMEN, PROJECT_TYPES, STATUS, TYPE_AR, listingFacts, listingPlan, listingTitle, num, usd } from '../lib/format.js';
+import { ERBIL, hasPos, toPos } from '../components/MapView.jsx';
+
+// Map position: the row's own pin, else its area's centre, else Erbil.
+const posOf = (row, area) => (hasPos(row) ? toPos(row) : hasPos(area) ? toPos(area) : ERBIL);
 
 const Ctx = createContext(null);
 export const useSite = () => useContext(Ctx);
@@ -75,7 +79,7 @@ export function SiteDataProvider({ children }) {
         payLabel: l.payment === 'installments' ? 'تقسيط' : l.payment === 'both' ? 'كاش أو تقسيط' : l.payment === 'cash' ? 'كاش' : l.furnishing || '',
         isInstall: l.payment === 'installments' || l.payment === 'both',
         statusLabel: st[0], statusColor: st[1], statusBg: st[2],
-        plan: listingPlan(l, pr), href: `/property/${l.id}`,
+        plan: listingPlan(l, pr), href: `/property/${l.id}`, pos: posOf(l, a), hasPin: hasPos(l),
       };
     };
     const all = raw.listings.map(card);
@@ -88,7 +92,7 @@ export function SiteDataProvider({ children }) {
         isReady: p.status === 'ready', statusLabel: p.status === 'ready' ? 'جاهز' : 'قيد الإنشاء', progressW: p.progress + '%',
         fromText: money(p.price_from), amenList: (p.amenities || []).map((k) => AMEN[k] || k),
         unitList: live.filter((l) => l.project_id === p.id), downPct: p.plan_down + '%', monthsText: p.plan_months + ' شهر',
-        instPct: Math.max(0, 100 - p.plan_down - p.plan_handover) + '%', handPct: p.plan_handover + '%', href: `/projects/${p.id}`,
+        instPct: Math.max(0, 100 - p.plan_down - p.plan_handover) + '%', handPct: p.plan_handover + '%', href: `/projects/${p.id}`, pos: posOf(p, a), hasPin: hasPos(p),
       };
     };
     const projs = raw.projects.map(proj);
@@ -99,7 +103,7 @@ export function SiteDataProvider({ children }) {
       return {
         ...a, desc: a.description, ppmText: money(a.ppm), rentText: '$' + Number(a.rent) + ' / م² شهرياً',
         saleCount: ls.filter((l) => l.deal === 'sale').length, rentCount: ls.filter((l) => l.deal === 'rent').length, total: ls.length,
-        left: a.x + '%', top: a.y + '%', barW: Math.round((a.ppm / maxPpm) * 100) + '%',
+        pos: posOf(a), barW: Math.round((a.ppm / maxPpm) * 100) + '%',
         dnaRows: Object.entries(DNA).map(([k, lab]) => ({ lab, v: a.dna?.[k] ?? 0, w: (a.dna?.[k] ?? 0) * 10 + '%' })),
         listings: ls, projs: projs.filter((p) => p.area_id === a.id), href: `/areas/${a.id}`,
       };

@@ -6,6 +6,7 @@ import { useDocTitle } from '../../lib/hooks.js';
 import { AMEN, PROJECT_TYPES, usd } from '../../lib/format.js';
 import { Btn, Card, Empty, Field, Spinner, StatusPill, Toggle, useToast } from '../../components/ui.jsx';
 import { PageTitle, ScrollX, TABLE, editBtn, thead, trow } from '../../staff/Shell.jsx';
+import { LocationPicker } from '../../components/MapView.jsx';
 
 const COLS = '56px minmax(180px,1.5fr) 1fr 1fr 160px 90px 110px 70px';
 
@@ -38,7 +39,8 @@ export function ProjectsList() {
 
 const slug = (s) => s.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 const NUMS = ['progress', 'floors', 'units', 'price_from', 'plan_down', 'plan_months', 'plan_handover', 'sort'];
-const FIELDS = ['name', 'name_en', 'type', 'area_id', 'developer_id', 'status', 'handover', 'img', 'tagline', 'amenities', 'published', ...NUMS];
+const GEO = ['lat', 'lng'];
+const FIELDS = ['name', 'name_en', 'type', 'area_id', 'developer_id', 'status', 'handover', 'img', 'tagline', 'amenities', 'published', ...GEO, ...NUMS];
 
 export function ProjectEditor() {
   const { id } = useParams();
@@ -47,7 +49,7 @@ export function ProjectEditor() {
   const nav = useNavigate();
   const toast = useToast();
   const p = isNew ? null : C.projects.find((x) => x.id === id);
-  const initial = useMemo(() => (p ? Object.fromEntries(FIELDS.map((k) => [k, p[k] ?? ''])) : { name: '', name_en: '', type: 'tower', area_id: C.areas[0]?.id || '', developer_id: C.devs[0]?.id || '', status: 'construction', handover: '', img: '', tagline: '', amenities: [], published: true, progress: 0, floors: 1, units: 0, price_from: 0, plan_down: 20, plan_months: 36, plan_handover: 10, sort: C.projects.length }), [p?.updated_at, id]);
+  const initial = useMemo(() => (p ? Object.fromEntries(FIELDS.map((k) => [k, p[k] ?? ''])) : { name: '', name_en: '', type: 'tower', area_id: C.areas[0]?.id || '', developer_id: C.devs[0]?.id || '', status: 'construction', handover: '', img: '', tagline: '', amenities: [], published: true, progress: 0, floors: 1, units: 0, price_from: 0, plan_down: 20, plan_months: 36, plan_handover: 10, sort: C.projects.length, lat: '', lng: '' }), [p?.updated_at, id]);
   const [f, setF] = useState(initial);
   const [busy, setBusy] = useState(false);
   useEffect(() => setF(initial), [initial]);
@@ -61,7 +63,7 @@ export function ProjectEditor() {
     if (+f.plan_down + +f.plan_handover > 100) return toast('مجموع الدفعة الأولى والتسليم أكبر من 100%', 'error');
     setBusy(true);
     try {
-      const row = Object.fromEntries(FIELDS.map((k) => [k, NUMS.includes(k) ? Math.round(+f[k] || 0) : f[k] === '' ? null : f[k]]));
+      const row = Object.fromEntries(FIELDS.map((k) => [k, GEO.includes(k) ? (f[k] === '' || f[k] == null ? null : +(+f[k]).toFixed(6)) : NUMS.includes(k) ? Math.round(+f[k] || 0) : f[k] === '' ? null : f[k]]));
       row.progress = Math.min(100, Math.max(0, row.progress));
       if (row.status === 'ready') row.progress = 100;
       if (isNew) {
@@ -131,6 +133,9 @@ export function ProjectEditor() {
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
               {Object.entries(AMEN).map(([k, t]) => { const on = f.amenities.includes(k); return <button type="button" key={k} onClick={() => amen(k)} style={{ height: 32, padding: '0 12px', borderRadius: 999, background: on ? '#1d1e22' : '#fff', color: on ? '#fff' : '#1d1e22', border: on ? 0 : '1px solid #d8d8d3', fontSize: 13, cursor: 'pointer', whiteSpace: 'nowrap' }}>{t}{on ? ' ✓' : ''}</button>; })}
             </div>
+          </Card>
+          <Card><div style={{ fontWeight: 600, marginBottom: 14 }}>الموقع على الخريطة</div>
+            <LocationPicker value={f.lat !== '' && f.lng !== '' ? { lat: f.lat, lng: f.lng } : null} fallback={C.A[f.area_id]} clearable height={240} onChange={(p) => setF((s) => ({ ...s, lat: p ? p.lat : '', lng: p ? p.lng : '' }))} hint="بدون تحديد، يظهر المشروع ضمن منطقته على الخريطة العامة" />
           </Card>
           {!isNew && f.type === 'tower' && <UnitsGrid project={p} />}
         </div>

@@ -16,7 +16,7 @@ export default function HomeSettings() {
   const init = useMemo(() => ({
     hero_kicker: S0.hero_kicker || '', hero_title: S0.hero_title || '', announcement: S0.announcement || '', show_agent: S0.show_agent !== false, show_listing_id: S0.show_listing_id !== false,
     sections: { types: true, featured: true, areas: true, tools: true, owners: true, ...(S0.sections || {}) }, home_areas: S0.home_areas || [], featured_project_id: S0.featured_project_id || '',
-    office_phone: S0.office_phone || '', office_whatsapp: S0.office_whatsapp || '', office_address: S0.office_address || '', iqd_rate: S0.iqd_rate || 1310,
+    office_phone: S0.office_phone || '', office_whatsapp: S0.office_whatsapp || '', office_address: S0.office_address || '', office_hours: S0.office_hours || '', office_map_url: S0.office_map_url || '', iqd_rate: S0.iqd_rate || 1310,
   }), [S0]);
   const [f, setF] = useState(init);
   const [feat, setFeat] = useState(initFeatured);
@@ -110,6 +110,8 @@ export default function HomeSettings() {
               <Field label="هاتف المكتب"><input className="inp-sm" dir="ltr" value={f.office_phone} onChange={set('office_phone')} /></Field>
               <Field label="واتساب"><input className="inp-sm" dir="ltr" value={f.office_whatsapp} onChange={set('office_whatsapp')} /></Field>
               <Field label="العنوان"><input className="inp-sm" value={f.office_address} onChange={set('office_address')} /></Field>
+              <Field label="ساعات الدوام" hint="تظهر في صفحة التواصل وصفحات العقارات"><input className="inp-sm" value={f.office_hours} onChange={set('office_hours')} placeholder="السبت – الخميس · 9:00 – 19:00" /></Field>
+              <Field label="رابط الموقع على خرائط Google"><input className="inp-sm" dir="ltr" value={f.office_map_url} onChange={set('office_map_url')} placeholder="https://maps.google.com/?q=…" /></Field>
               <Field label="سعر الصرف (دينار لكل دولار)"><input className="inp-sm" type="number" min="1" value={f.iqd_rate} onChange={set('iqd_rate')} /></Field>
             </div>
           </Card>
