@@ -20,7 +20,6 @@ const searchCap = { fontSize: 12, fontWeight: 600, color: '#767a83' };
 const searchSel = { border: 0, outline: 0, fontSize: 15, fontWeight: 500, padding: '2px 0', background: 'transparent', width: '100%' };
 const catBtn = { textAlign: 'start', padding: 18, borderRadius: 18, border: '1px solid #e7e7e3', background: '#fff', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 14 };
 const toolBtn = { textAlign: 'start', padding: 20, borderRadius: 18, border: '1px solid #e7e7e3', background: '#fff', cursor: 'pointer' };
-const popChip = { height: 32, padding: '0 12px', borderRadius: 999, border: '1px solid #d8d8d3', background: '#fff', fontSize: 13, cursor: 'pointer', flex: 'none', whiteSpace: 'nowrap' };
 
 export default function Home() {
   useDocTitle('');
@@ -91,12 +90,6 @@ export default function Home() {
             )}</label>
           <button type="submit" style={{ minHeight: 58, margin: 4, borderRadius: 16, border: 0, background: '#c8102e', color: '#fff', fontWeight: 600, fontSize: 16, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, whiteSpace: 'nowrap' }}><IconSearch />ابحث</button>
         </form>
-        <div className="no-scrollbar" style={{ marginTop: 12, display: 'flex', gap: 8, alignItems: 'center', overflowX: 'auto', fontSize: 13, paddingBottom: 4 }}>
-          <span style={{ color: '#9da0a7', flex: 'none' }}>شائع</span>
-          {[['تقسيط', '/buy?pay=installments'], ['فلل جاهزة', '/buy?type=villa&pay=ready'], ['أراضي', '/buy?type=land'], ['أقل من 150 ألف', '/buy?max=150000'], ['بيوت ببختياري', '/buy?type=house&area=bakhtiari']].map(([t, to]) => (
-            <button key={t} style={popChip} onClick={() => nav(to)}>{t}</button>
-          ))}
-        </div>
       </div>
 
       <div style={{ marginTop: 40, position: 'relative', borderRadius: 24, overflow: 'hidden', height: L.bannerH, background: '#f6f6f4' }}>
@@ -166,7 +159,7 @@ export default function Home() {
       {sec.owners && (
         <div style={{ marginTop: 56, display: 'grid', gridTemplateColumns: L.cols2, gap: 16 }}>
           <CtaCard bg="#1d1e22" kicker="لأصحاب العقارات" title="بيع عقارك أو أجّره ويا فريق يعرف السوق" btn="استشارة مجانية" fs={L.ctaFs} onClick={() => nav('/sell')} op={0.7} />
-          <CtaCard bg="#c8102e" kicker="ڤايرو للاستثمار" title="سيناريوهات، مو وعود." btn="حاسبة العائد" fs={L.ctaFs} onClick={() => nav('/invest')} op={0.8} />
+          <CtaCard bg="#c8102e" kicker="ڤايرو للاستثمار" title="سيناريوهات، مو وعود." btn="قريباً" fs={L.ctaFs} onClick={() => nav('/invest')} op={0.8} />
         </div>
       )}
     </section>

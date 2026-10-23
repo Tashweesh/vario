@@ -24,7 +24,7 @@ export function Tools() {
         ))}
         <button style={{ ...toolCard, border: 0, background: '#c8102e', color: '#fff' }} onClick={() => nav('/invest')}>
           <div><div style={{ fontWeight: 600, fontSize: 18 }}>ڤايرو للاستثمار</div><div style={{ fontSize: 13.5, opacity: 0.85, marginTop: 4 }}>حاسبة العائد وسيناريوهات واضحة</div></div>
-          <span style={{ fontSize: 13, fontWeight: 600 }}>افتح ←</span>
+          <span style={{ fontSize: 13, fontWeight: 600 }}>قريباً ←</span>
         </button>
       </div>
     </section>
@@ -172,47 +172,20 @@ export function Guides() {
 
 export function Invest() {
   useDocTitle('استثمار');
-  const S = useSite();
   const L = useLayout();
-  const [f, setF] = useState({ price: 214000, rent: 1150, vacancy: 1 });
-  const [modal, setModal] = useState(false);
-  const gross = f.price > 0 ? ((f.rent * (12 - f.vacancy)) / f.price) * 100 : 0;
-  const net = gross * 0.875; // ~12.5% maintenance, management and service charges
-  const inp = (k, ltr, min, max, step) => <input className="inp" type="number" inputMode="numeric" min={min} max={max} step={step} dir={ltr ? 'ltr' : undefined} value={f[k]} onChange={(e) => setF({ ...f, [k]: Math.max(min, Math.min(max, +e.target.value || 0)) })} style={{ fontWeight: 600, textAlign: ltr ? 'right' : undefined }} />;
-  const lbl = { display: 'flex', flexDirection: 'column', gap: 6, fontSize: 13, fontWeight: 600, minWidth: 0 };
+  const nav = useNavigate();
   return (
     <section style={{ paddingTop: 28 }}>
-      <PageHead kicker="ڤايرو للاستثمار" title="سيناريوهات، مو وعود." h1Fs={L.h1Fs} sub="نعرض العائد التقريبي من إيجارات مشابهة في نفس المنطقة، مع المخاطر بلغة واضحة." />
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 12, marginTop: 24 }}>
-        {[['دخل سكني', '5.5–7%', 'شقق في كولان وعينكاوة'], ['عقار تجاري', '7–9%', 'محلات ومكاتب بالمركز'], ['أراضي', 'نمو رأسمالي', 'طريق كركوك ودارتو']].map(([k, v, d]) => (
-          <div key={k} style={{ border: '1px solid #e7e7e3', borderRadius: 20, padding: 22 }}><div style={{ fontSize: 13, color: '#767a83' }}>{k}</div><div style={{ fontSize: 30, fontWeight: 700, marginTop: 4 }}>{v}</div><div style={{ fontSize: 13, color: '#5a5e68', marginTop: 4 }}>{d}</div></div>
-        ))}
+      <PageHead kicker="ڤايرو للاستثمار" title="قريباً" h1Fs={L.h1Fs} sub="نشتغل على صفحة الاستثمار: حاسبة العائد وسيناريوهات واضحة بلغة بسيطة. لحد ما تجهز، تقدر تستكشف المناطق والأدوات أو تتواصل ويّا فريق ڤايرو." />
+      <div style={{ ...toolCard, cursor: 'default', background: '#f6f6f4', color: '#5a5e68', marginTop: 24, maxWidth: 560 }}>
+        <div><div style={{ fontWeight: 600, fontSize: 18, color: '#1d1e22' }}>سيناريوهات، مو وعود.</div><div style={{ fontSize: 13.5, color: '#767a83', marginTop: 4 }}>العائد التقريبي من إيجارات مشابهة في نفس المنطقة، مع المخاطر بوضوح.</div></div>
+        <span style={{ fontSize: 12, fontWeight: 600, color: '#767a83', border: '1px solid #d8d8d3', borderRadius: 999, padding: '4px 10px', alignSelf: 'flex-start' }}>قريباً</span>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: L.cols2, gap: 24, marginTop: 24, alignItems: 'start' }}>
-        <div style={{ border: '1px solid #e7e7e3', borderRadius: 24, padding: L.phone ? 20 : 28 }}>
-          <h2 style={{ fontSize: 22, fontWeight: 600, margin: '0 0 18px' }}>حاسبة العائد</h2>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <label style={lbl}>سعر الشراء (دولار){inp('price', true, 0, 10000000, 1000)}</label>
-            <label style={lbl}>الإيجار الشهري المتوقع (دولار){inp('rent', true, 0, 100000, 50)}</label>
-            <label style={lbl}>شهور الشغور بالسنة{inp('vacancy', false, 0, 11, 1)}</label>
-          </div>
-          <div style={{ marginTop: 20, background: '#f6f6f4', borderRadius: 16, padding: 18, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <div><div style={{ fontSize: 12, color: '#767a83' }}>العائد الإجمالي</div><div style={{ fontSize: 26, fontWeight: 700 }}>{gross.toFixed(1)}%</div></div>
-            <div><div style={{ fontSize: 12, color: '#767a83' }}>الصافي بعد الصيانة</div><div style={{ fontSize: 26, fontWeight: 700 }}>{net.toFixed(1)}%</div></div>
-          </div>
-          <div style={{ fontSize: 12.5, color: '#767a83', marginTop: 10 }}>الصافي يفترض ~12.5% من الإيجار للصيانة والإدارة والخدمات.</div>
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <div style={{ background: '#1d1e22', color: '#fff', borderRadius: 24, padding: 28 }}>
-            <div style={{ fontWeight: 600, fontSize: 18 }}>المخاطر بوضوح</div>
-            <ul style={{ margin: '14px 0 0', padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 10, fontSize: 14, opacity: 0.9, lineHeight: 1.6 }}>
-              <li>· الإيجارات بالدولار تتأثر بسعر الصرف</li><li>· مشاريع قيد الإنشاء قد تتأخر بالتسليم</li><li>· السيولة أبطأ من الأسواق الأخرى، البيع قد يأخذ أشهر</li>
-            </ul>
-          </div>
-          <Btn kind="red" h={46} fs={14.5} onClick={() => setModal(true)}>احجز جلسة استثمار مجانية</Btn>
-        </div>
+      <div style={{ display: 'flex', gap: 8, marginTop: 24, flexWrap: 'wrap' }}>
+        <Btn kind="dark" onClick={() => nav('/areas')}>استكشف المناطق</Btn>
+        <Btn onClick={() => nav('/tools')}>الأدوات</Btn>
+        <Btn onClick={() => nav('/contact')}>اسأل فريق ڤايرو</Btn>
       </div>
-      {modal && <LeadModal title="جلسة استثمار مجانية" sub="مستشار ڤايرو يراجع ويّاك السيناريوهات حسب ميزانيتك." kind="invest" budget={f.price} deal="sale" onClose={() => setModal(false)} buildMessage={() => `حاسبة العائد: سعر ${S.money(f.price)} · إيجار ${S.money(f.rent)} · عائد إجمالي ${gross.toFixed(1)}%`} submitLabel="احجز الجلسة" />}
     </section>
   );
 }
