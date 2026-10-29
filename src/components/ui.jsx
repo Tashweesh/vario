@@ -5,10 +5,13 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState } f
 
 // ───────────── brand
 export function LogoMark({ size = 34 }) {
+  // Brand mark: red V (heavy left stroke, hairline right stroke) on a near-black tile — from the supplied logo artwork.
   return (
-    <svg width={size} height={size} viewBox="0 0 34 34" aria-hidden="true">
-      <rect width="34" height="34" rx="10" fill="#C8102E" />
-      <path d="M9.5 10.5 17 24.5l7.5-14" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+    <svg width={size} height={size} viewBox="0 0 1080 1080" aria-hidden="true">
+      <defs><radialGradient id="vlg" cx="50%" cy="42%" r="70%"><stop offset="0" stopColor="#1c1c1c" /><stop offset="1" stopColor="#0a0a0a" /></radialGradient></defs>
+      <rect width="1080" height="1080" rx="230" fill="url(#vlg)" />
+      <path d="M275 300H435L625 690L578 778H540L330 330Z" fill="#E6323E" />
+      <path d="M805 300H835L685 605H655Z" fill="#E6323E" />
     </svg>
   );
 }
