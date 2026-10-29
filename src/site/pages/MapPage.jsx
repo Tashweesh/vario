@@ -269,7 +269,7 @@ export function MapExplorer({ embedded = false, height = 560 }) {
               <span className="text-ink-400">OpenStreetMap</span>
             </div>
             {hint && (
-              <div className="absolute top-4 end-4 pointer-events-none hidden md:block max-w-[46%]" style={{ zIndex: 1000 }}><span className="inline-flex items-center gap-1.5 bg-white/95 backdrop-blur rounded-[12px] border hair shadow-soft px-3 py-2 text-[12px] font-medium text-ink-600">{hint}</span></div>
+              <div className="absolute top-4 pointer-events-none hidden md:block max-w-[46%]" style={{ zIndex: 1000, insetInlineEnd: 68 }}><span className="inline-flex items-center gap-1.5 bg-white/95 backdrop-blur rounded-[12px] border hair shadow-soft px-3 py-2 text-[12px] font-medium text-ink-600">{hint}</span></div>
             )}
 
             {/* floating preview */}
