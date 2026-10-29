@@ -53,7 +53,7 @@ export default function Login() {
             <div className="osb osb-amber mb-3">غير مفعّل</div>
             <h1 className="t-h2 text-[26px]">حسابك غير مفعّل</h1>
             <p className="text-ink-500 text-[14px] mt-1 leading-relaxed">سجّلت الدخول بـ <b dir="ltr" className="text-ink">{A.session.user.email}</b> لكن هذا البريد غير مضاف لفريق ڤايرو. اطلب من مدير النظام دعوتك من «المستخدمون والصلاحيات» بنفس البريد.</p>
-            <div className="grid grid-cols-2 gap-2 mt-6"><Btn kind="dark" onClick={() => A.refreshMe()}>تحقّق مرة ثانية</Btn><Btn onClick={A.signOut}>تسجيل الخروج</Btn></div>
+            <div className="mt-6"><Link to="/" className="btn btn-ink w-full"><Icon name="home" size={17} />الرجوع للصفحة الرئيسية</Link></div>
           </>
         ) : (
           <>
