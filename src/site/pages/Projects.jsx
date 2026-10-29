@@ -49,7 +49,7 @@ export function Projects() {
   const fid = S.settings.featured_project_id;
   const list = S.projs.filter((p) => (!type || p.type === type) && (!status || p.status === status)).sort((a, b) => (b.id === fid) - (a.id === fid));
   const tot = S.projs.reduce((a, p) => { const c = counts(p); return { s: a.s + c.s, r: a.r + c.r }; }, { s: 0, r: 0 });
-  const stats = [[S.projs.length, 'مشروع'], [S.projs.filter((p) => p.status === 'construction').length, 'قيد الإنشاء'], [tot.s, 'عرض للبيع'], [tot.r, 'عرض للإيجار']];
+  const stats = [[S.projs.length, 'مشاريع'], [S.projs.filter((p) => p.status === 'construction').length, 'قيد الإنشاء'], [tot.s, 'عرض للبيع'], [tot.r, 'عرض للإيجار']];
   const active = [];
   if (type) active.push(['type', KIND[type]?.short || type]);
   if (status) active.push(['status', status === 'ready' ? 'جاهز' : 'قيد الإنشاء']);

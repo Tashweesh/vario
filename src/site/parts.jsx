@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase, friendlyError } from '../lib/supabase.js';
 import { useSite } from './SiteData.jsx';
-import { Btn, Field, Icon, Img, Modal, useToast } from '../components/ui.jsx';
+import { Btn, Field, Icon, Img, Modal, PhoneField, useToast } from '../components/ui.jsx';
 
 // Shared site parts, ported from the design reference (core.js: V.card, V.projCard, V.head, V.crumbs, V.facts …).
 
@@ -282,7 +282,7 @@ export function LeadModal({ title, sub, kind, listingIds, listing, deal, budget,
           )}
           <div className="grid sm:grid-cols-2 gap-3">
             <Field label="الاسم الكامل"><input className="field" required minLength={2} maxLength={120} value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} placeholder="اسمك" /></Field>
-            <Field label="رقم الموبايل"><input className="field" required dir="ltr" inputMode="tel" pattern="[0-9+ ()-]{7,20}" style={{ textAlign: 'right' }} value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} placeholder="07xx xxx xxxx" /></Field>
+            <Field label="رقم الموبايل"><PhoneField value={f.phone} onChange={(v) => setF((s) => ({ ...s, phone: v }))} /></Field>
           </div>
           {extra && <div className="mt-4">{extra(x, setX)}</div>}
           <div className="mt-4"><Field label="رسالة (اختياري)"><textarea className="field" rows={3} maxLength={1500} value={f.note} onChange={(e) => setF({ ...f, note: e.target.value })} placeholder="أي شي تحب نعرفه؟" /></Field></div>

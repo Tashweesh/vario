@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useSite } from '../SiteData.jsx';
 import { useDocTitle } from '../../lib/hooks.js';
-import { Field, Icon, Img, useToast } from '../../components/ui.jsx';
+import { Field, Icon, Img, useToast, PhoneField } from '../../components/ui.jsx';
 import { Crumbs, submitLead } from '../parts.jsx';
 
 // /sell?mode=sale|rent — ported from the reference pages/sell.js (sale) and pages/listrent.js (rent):
@@ -123,7 +123,7 @@ export default function Owners() {
         <h2 className="t-h2 text-[24px] sm:text-[30px]">شلون نتواصل وياك؟</h2><p className="text-ink-600 mt-1">ما تحتاج حساب. مستشارك يتواصل وياك مباشرة.</p>
         <div className="grid sm:grid-cols-2 gap-4 mt-6">
           <Field label={<>الاسم الكامل <span className="text-red">*</span></>}><input className="field" required minLength={2} placeholder="اسمك" value={f.name} onChange={set('name')} /></Field>
-          <Field label={<>رقم الموبايل <span className="text-red">*</span></>}><input className="field" required dir="ltr" inputMode="tel" pattern="[0-9+ ()-]{7,20}" style={{ textAlign: 'right' }} placeholder="07xx xxx xxxx" value={f.phone} onChange={set('phone')} /></Field>
+          <Field label={<>رقم الموبايل <span className="text-red">*</span></>}><PhoneField value={f.phone} onChange={(v) => setF((s) => ({ ...s, phone: v }))} /></Field>
         </div>
       </>
     );

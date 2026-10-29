@@ -253,3 +253,48 @@ export const Empty = ({ children, icon, title, style, className = '' }) => (
   </div>
 );
 export const Card = ({ children, style, pad = 22, className = '' }) => <div className={`panel ${className}`} style={{ padding: pad, ...style }}>{children}</div>;
+
+// ───────────── phone number with a country code (reference contact sheet: "+964" prefix box + national number)
+// [dial code, Arabic name, flag, allowed national-number lengths, regex the national number must match]
+export const COUNTRY_CODES = [
+  ['964', 'العراق', '🇮🇶', [10, 10], /^7\d{9}$/, 'رقم الموبايل العراقي 10 أرقام ويبدأ بـ 7 (مثال: 750 123 4567)'],
+  ['90', 'تركيا', '🇹🇷', [10, 10], /^5\d{9}$/, 'الرقم التركي 10 أرقام ويبدأ بـ 5'],
+  ['971', 'الإمارات', '🇦🇪', [9, 9], /^5\d{8}$/, 'الرقم الإماراتي 9 أرقام ويبدأ بـ 5'],
+  ['962', 'الأردن', '🇯🇴', [9, 9], /^7\d{8}$/, 'الرقم الأردني 9 أرقام ويبدأ بـ 7'],
+  ['966', 'السعودية', '🇸🇦', [9, 9], /^5\d{8}$/, 'الرقم السعودي 9 أرقام ويبدأ بـ 5'],
+  ['965', 'الكويت', '🇰🇼', [8, 8], /^\d{8}$/, 'الرقم الكويتي 8 أرقام'],
+  ['974', 'قطر', '🇶🇦', [8, 8], /^\d{8}$/, 'الرقم القطري 8 أرقام'],
+  ['98', 'إيران', '🇮🇷', [10, 10], /^9\d{9}$/, 'الرقم الإيراني 10 أرقام ويبدأ بـ 9'],
+  ['961', 'لبنان', '🇱🇧', [7, 8], /^\d{7,8}$/, 'الرقم اللبناني 7 أو 8 أرقام'],
+  ['963', 'سوريا', '🇸🇾', [9, 9], /^9\d{8}$/, 'الرقم السوري 9 أرقام ويبدأ بـ 9'],
+  ['20', 'مصر', '🇪🇬', [10, 10], /^1\d{9}$/, 'الرقم المصري 10 أرقام ويبدأ بـ 1'],
+  ['44', 'بريطانيا', '🇬🇧', [10, 10], /^7\d{9}$/, 'الرقم البريطاني 10 أرقام ويبدأ بـ 7'],
+  ['49', 'ألمانيا', '🇩🇪', [10, 11], /^1\d{9,10}$/, 'الرقم الألماني 10 أو 11 رقم ويبدأ بـ 1'],
+  ['46', 'السويد', '🇸🇪', [9, 9], /^7\d{8}$/, 'الرقم السويدي 9 أرقام ويبدأ بـ 7'],
+  ['31', 'هولندا', '🇳🇱', [9, 9], /^6\d{8}$/, 'الرقم الهولندي 9 أرقام ويبدأ بـ 6'],
+  ['1', 'أمريكا / كندا', '🇺🇸', [10, 10], /^[2-9]\d{9}$/, 'الرقم الأمريكي 10 أرقام'],
+];
+const splitPhone = (v) => {
+  const s = String(v || '').replace(/[^\d+]/g, '');
+  if (s.startsWith('+')) { const c = COUNTRY_CODES.find((x) => s.slice(1).startsWith(x[0])); if (c) return { code: c[0], num: s.slice(1 + c[0].length) }; }
+  return { code: '964', num: s.replace(/^0+/, '') };
+};
+// value: full international number ("+9647501234567"); onChange(fullValue). Validates length/shape per country before the form can submit.
+export function PhoneField({ value, onChange, required = true, autoFocus }) {
+  const { code, num } = splitPhone(value);
+  const c = COUNTRY_CODES.find((x) => x[0] === code) || COUNTRY_CODES[0];
+  const emit = (cc, n) => onChange(n ? `+${cc}${n}` : '');
+  const check = (el, cc, n) => { const k = COUNTRY_CODES.find((x) => x[0] === cc) || COUNTRY_CODES[0]; el.setCustomValidity(!n || k[4].test(n) ? '' : k[5]); };
+  return (
+    <div className="flex" dir="ltr">
+      <select className="h-[50px] px-2 rounded-s-[12px] border border-e-0 hair bg-paper-2 text-[14px] text-ink-600 outline-none flex-none" aria-label="رمز الدولة" value={code}
+        onChange={(e) => { const cc = e.target.value; emit(cc, num); const inp = e.target.parentNode.querySelector('input'); if (inp) check(inp, cc, num); }}>
+        {COUNTRY_CODES.map(([cc, name, flag]) => <option key={cc} value={cc}>{flag} +{cc} {name}</option>)}
+      </select>
+      <input className="field !rounded-s-none" required={required} autoFocus={autoFocus} inputMode="tel" autoComplete="tel-national" dir="ltr" placeholder={c[0] === '964' ? '750 000 0000' : 'رقم الموبايل'} value={num}
+        title={c[5]}
+        onChange={(e) => { const n = e.target.value.replace(/\D/g, '').replace(/^0+/, '').slice(0, c[3][1]); emit(code, n); check(e.target, code, n); }}
+        onBlur={(e) => check(e.target, code, num)} onInvalid={(e) => check(e.target, code, num)} />
+    </div>
+  );
+}

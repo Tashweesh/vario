@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { useSite } from '../SiteData.jsx';
 import { useDocTitle } from '../../lib/hooks.js';
-import { Field, Icon, useToast } from '../../components/ui.jsx';
+import { Field, Icon, useToast, PhoneField } from '../../components/ui.jsx';
 import { Crumbs, Dot, stripes, submitLead, waLink } from '../parts.jsx';
 
 // /contact — ported from the reference pages/contact.js: hero → channel cards → message form + office panel.
@@ -73,7 +73,7 @@ export default function Contact() {
               <div className="flex flex-wrap gap-2">{Object.keys(SUBJECTS).map((s) => <button key={s} type="button" className="chip" aria-pressed={f.subject === s} onClick={() => setF({ ...f, subject: s })}><Icon name={SUBJECT_ICON[s]} size={15} />{s}</button>)}</div>
               <div className="grid sm:grid-cols-2 gap-4 mt-6">
                 <Field label={<>الاسم الكامل <span className="text-red">*</span></>}><input className="field" required minLength={2} maxLength={120} placeholder="اسمك" value={f.name} onChange={set('name')} /></Field>
-                <Field label={<>رقم الموبايل <span className="text-red">*</span></>}><input className="field" required dir="ltr" inputMode="tel" pattern="[0-9+ ()-]{7,20}" placeholder="07xx xxx xxxx" style={{ textAlign: 'right' }} value={f.phone} onChange={set('phone')} /></Field>
+                <Field label={<>رقم الموبايل <span className="text-red">*</span></>}><PhoneField value={f.phone} onChange={(v) => setF((s) => ({ ...s, phone: v }))} /></Field>
               </div>
               <div className="mt-5"><div className="flabel">أفضل وقت للاتصال</div><div className="flex flex-wrap gap-2">{TIMES.map((t) => <button key={t} type="button" className="chip" aria-pressed={f.time === t} onClick={() => setF({ ...f, time: t })}><Icon name="clock" size={15} />{t}</button>)}</div></div>
               <div className="mt-5"><Field label={<>الرسالة <span className="lbl font-normal">اختياري</span></>}><textarea className="field" rows={4} placeholder="اكتب شنو تحتاج…" maxLength={1500} value={f.msg} onChange={set('msg')} /></Field></div>
