@@ -1,70 +1,86 @@
-body { margin: 0; background: #fff; font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif; color: #1d1e22; -webkit-font-smoothing: antialiased; }
-a { color: #1d1e22; text-decoration: none; }
-a:hover { color: #c8102e; }
-* { box-sizing: border-box; }
-input, button, select, textarea { font-family: inherit; color: inherit; }
-button:disabled { opacity: .55; cursor: not-allowed !important; }
-::-webkit-scrollbar { height: 6px; width: 6px; }
-::-webkit-scrollbar-thumb { background: #d8d8d3; border-radius: 6px; }
+/* Design reference: project/uploads/VAIRO_12 (1).html — its fonts and compiled stylesheet are extracted 1:1. */
+@import './fonts.css';
+@import './ref.css';
+
+/* ───────────── additions the React app needs on top of the reference stylesheet */
+.btn-green { background: #0f8a4f; color: #fff; }
+.btn-green:hover { background: #0c7343; }
+.spin-dark { width: 22px; height: 22px; border-radius: 999px; border: 2.5px solid #e7e7e3; border-top-color: #c8102e; animation: spin .8s linear infinite; }
+.toast .spin { flex: none; }
+.fade-up { animation: fadeUp .35s cubic-bezier(.2,.7,.1,1); }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.dragging { opacity: .4; }
+.drop-target { outline: 2px dashed #c8102e; outline-offset: 2px; }
 .no-scrollbar { scrollbar-width: none; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
+::-webkit-scrollbar { height: 6px; width: 6px; }
+::-webkit-scrollbar-thumb { background: #d8d8d3; border-radius: 6px; }
+.zoom img.zoom-img { transition: transform .9s cubic-bezier(.2,.7,.1,1); }
+.zoom:hover img.zoom-img { transform: scale(1.04); }
+button:disabled { opacity: .55; cursor: not-allowed !important; }
 
-/* hover states from the design (style-hover) */
+/* hover helpers kept for pages that still use them */
 .h-bg:hover { background: #f6f6f4 !important; }
 .h-row:hover { background: #fafaf8 !important; }
-.h-shadow:hover { box-shadow: 0 8px 24px rgba(0, 0, 0, .08); }
-.h-shadow-lg:hover { box-shadow: 0 10px 30px rgba(0, 0, 0, .08); }
-.h-shadow-sm:hover { box-shadow: 0 4px 14px rgba(0, 0, 0, .08); }
+.h-shadow:hover { box-shadow: 0 14px 40px -16px rgba(17,18,21,.25); }
+.h-shadow-lg:hover { box-shadow: 0 14px 40px -16px rgba(17,18,21,.25); }
+.h-shadow-sm:hover { box-shadow: 0 8px 24px -12px rgba(17,18,21,.25); }
 .h-border:hover { border-color: #1d1e22 !important; }
 .h-white:hover { color: #fff !important; }
-.zoom img.zoom-img { transition: transform .5s; }
-.zoom:hover img.zoom-img { transform: scale(1.04); }
 
-/* form controls styled like the design's boxes */
-.inp { height: 46px; border: 1px solid #d8d8d3; border-radius: 12px; background: #fff; padding: 0 14px; font-size: 15px; outline: 0; width: 100%; min-width: 0; }
-.inp:focus, .inp-sm:focus, .sel:focus, textarea.inp:focus { border-color: #1d1e22; }
-.inp-sm { height: 40px; border: 1px solid #d8d8d3; border-radius: 10px; background: #fff; padding: 0 12px; font-size: 14px; font-weight: 500; outline: 0; width: 100%; min-width: 0; color: #1d1e22; }
-.sel { appearance: none; -webkit-appearance: none; cursor: pointer; padding-inline-end: 30px !important;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239da0a7' stroke-width='2.4' stroke-linecap='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
-  background-repeat: no-repeat; background-position: left 12px center; }
-textarea.inp { height: auto; padding: 12px 14px; resize: vertical; line-height: 1.7; }
+/* legacy form classes → the reference's .field look */
+.inp { display: block; width: 100%; height: 50px; padding-inline: 16px; border: 1px solid #d8d8d3; background: #fff; border-radius: 12px; font-size: 15px; outline: 0; min-width: 0; transition: border-color .2s, box-shadow .2s; }
+.inp-sm { display: block; width: 100%; height: 40px; padding-inline: 12px; border: 1px solid #d8d8d3; background: #fff; border-radius: 10px; font-size: 13.5px; font-weight: 500; outline: 0; min-width: 0; color: #1d1e22; transition: border-color .2s, box-shadow .2s; }
+.inp:focus, .inp-sm:focus, .sel:focus, textarea.inp:focus { outline: none; border-color: #1d1e22; box-shadow: 0 0 0 4px rgba(29,30,34,.06); }
+textarea.inp { height: auto; padding-block: 12px; min-height: 110px; resize: vertical; line-height: 1.7; }
+.sel { appearance: none; -webkit-appearance: none; cursor: pointer; padding-inline-end: 38px !important;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%231D1E22' stroke-width='2' viewBox='0 0 24 24'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: left 14px center; }
 input[type=range] { accent-color: #c8102e; }
 input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 input[type=number] { -moz-appearance: textfield; }
 
-@keyframes spin { to { transform: rotate(360deg); } }
-@keyframes fadein { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
-.spin { width: 22px; height: 22px; border-radius: 999px; border: 2.5px solid #e7e7e3; border-top-color: #c8102e; animation: spin .8s linear infinite; }
-.toast { animation: fadein .2s ease-out; }
-.dragging { opacity: .4; }
-.drop-target { outline: 2px dashed #c8102e; outline-offset: 2px; }
-
-/* maps (Leaflet + OpenStreetMap) */
-.leaflet-container { font-family: inherit; background: #eeeeeb; font-size: 12px; }
-.leaflet-container a.leaflet-control-zoom-in, .leaflet-container a.leaflet-control-zoom-out { width: 36px; height: 36px; line-height: 34px; font-size: 18px; font-weight: 600; color: #1d1e22; background: #fff; }
-.leaflet-touch .leaflet-bar { border: 1px solid #d8d8d3; border-radius: 10px; overflow: hidden; }
+/* ───────────── maps (Leaflet + OpenStreetMap), pins styled like the reference's .pin-price */
+.leaflet-container { font-family: inherit; background: #f4f4f1; font-size: 12px; }
+.leaflet-container a.leaflet-control-zoom-in, .leaflet-container a.leaflet-control-zoom-out { width: 40px; height: 40px; line-height: 38px; font-size: 18px; font-weight: 600; color: #1d1e22; background: #fff; }
+.leaflet-container a.leaflet-control-zoom-in:hover, .leaflet-container a.leaflet-control-zoom-out:hover { background: #f6f6f4; }
+.leaflet-touch .leaflet-bar { border: 1px solid #e7e7e3; border-radius: 12px; overflow: hidden; box-shadow: 0 14px 40px -16px rgba(17,18,21,.25); }
 .leaflet-touch .leaflet-bar a:first-child { border-radius: 0; border-bottom: 1px solid #e7e7e3; }
 .leaflet-touch .leaflet-bar a:last-child { border-radius: 0; }
-.leaflet-control-attribution { background: rgba(255,255,255,.8) !important; color: #767a83; font-size: 10px; padding: 1px 6px; border-radius: 0 6px 0 0; }
-.leaflet-control-attribution a { color: #767a83; }
+.leaflet-control-attribution { background: rgba(255,255,255,.85) !important; color: #9da0a7; font-size: 10px; padding: 1px 6px; border-radius: 0 6px 0 0; font-family: 'IBM Plex Mono', ui-monospace, monospace; letter-spacing: .04em; }
+.leaflet-control-attribution a { color: #9da0a7; }
 .vmk { background: none; border: 0; }
-.vpill { position: absolute; transform: translate(-50%,-50%); height: 30px; padding: 0 10px; border-radius: 999px; background: #1d1e22; color: #fff; font-size: 12.5px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; box-shadow: 0 2px 8px rgba(0,0,0,.18); border: 1.5px solid #fff; cursor: pointer; transition: transform .15s; }
-.vpill b { font-weight: 500; opacity: .7; }
-.vpill.area { background: #fff; color: #1d1e22; border-color: #d8d8d3; }
-.vpill.area b { color: #9da0a7; opacity: 1; }
-.vpill.num { width: 30px; padding: 0; justify-content: center; background: #c8102e; font-size: 13px; }
-.vpill.on { background: #c8102e; color: #fff; border-color: #c8102e; }
+.vpill { position: absolute; transform: translate(-50%,-100%); display: inline-flex; align-items: center; gap: 4px; height: 28px; padding-inline: 10px; background: #fff; color: #1d1e22; font-size: 12px; font-weight: 700; border-radius: 999px; box-shadow: 0 3px 10px -2px rgba(0,0,0,.25), 0 0 0 1px rgba(0,0,0,.05); white-space: nowrap; cursor: pointer; transition: all .18s; font-variant-numeric: tabular-nums; }
+.vpill b { font-weight: 500; color: #9da0a7; }
+.vpill.rent { color: #c8102e; }
+.vpill.area { background: #fff; color: #1d1e22; }
+.vpill.num { width: 28px; padding: 0; justify-content: center; background: #c8102e; color: #fff; }
+.vpill.on { background: #c8102e; color: #fff; }
 .vpill.on b { color: #fff; opacity: .8; }
-.leaflet-interactive .vpill:hover, .leaflet-marker-icon:hover .vpill { transform: translate(-50%,-50%) scale(1.06); }
-.vdot { position: absolute; transform: translate(-50%,-50%); width: 18px; height: 18px; border-radius: 999px; background: #c8102e; border: 3px solid #fff; box-shadow: 0 0 0 8px rgba(200,16,46,.2), 0 2px 6px rgba(0,0,0,.2); }
-.vdot.approx { background: #767a83; box-shadow: 0 0 0 10px rgba(118,122,131,.18), 0 2px 6px rgba(0,0,0,.2); }
-.leaflet-popup-content-wrapper { border-radius: 14px; box-shadow: 0 8px 30px rgba(0,0,0,.14); padding: 0; overflow: hidden; }
+.leaflet-marker-icon:hover .vpill:not(.on) { background: #1d1e22; color: #fff; transform: translate(-50%,-100%) scale(1.06); }
+.leaflet-marker-icon:hover .vpill:not(.on) b { color: #fff; opacity: .8; }
+.vdot { position: absolute; transform: translate(-50%,-50%); width: 14px; height: 14px; border-radius: 999px; background: #c8102e; border: 2px solid #fff; box-shadow: 0 0 0 0 rgba(200,16,46,.45); animation: pulse 2s infinite; }
+.vdot.approx { background: #767a83; animation: none; box-shadow: 0 0 0 8px rgba(118,122,131,.18), 0 2px 6px rgba(0,0,0,.2); }
+.leaflet-popup-content-wrapper { border-radius: 16px; box-shadow: 0 24px 50px -20px rgba(17,18,21,.35); padding: 0; overflow: hidden; border: 1px solid #e7e7e3; }
 .leaflet-popup-content { margin: 0; width: 220px !important; font-size: 13px; line-height: 1.5; }
 .leaflet-popup-tip { box-shadow: none; }
 .vpop img { display: block; width: 100%; height: 120px; object-fit: cover; }
 .vpop-b { padding: 10px 12px 12px; }
-.vpop-p { font-weight: 700; font-size: 15px; text-align: right; }
+.vpop-p { font-weight: 600; font-size: 15px; text-align: right; font-variant-numeric: tabular-nums; }
 .vpop-t { font-weight: 600; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 2px; }
 .vpop-s { font-size: 12px; color: #767a83; }
-.vpop-btn { margin-top: 10px; width: 100%; height: 34px; border-radius: 10px; border: 0; background: #1d1e22; color: #fff; font-weight: 600; font-size: 13px; cursor: pointer; }
-.vpop-btn:hover { background: #c8102e; }
+.vpop-btn { margin-top: 10px; width: 100%; height: 36px; border-radius: 10px; border: 0; background: #1d1e22; color: #fff; font-weight: 600; font-size: 13px; cursor: pointer; }
+.vpop-btn:hover { background: #2b2d32; }
+
+/* utilities used by the React port that the reference never needed */
+.place-items-center { place-items: center; }
+.contents { display: contents; }
+.mt-9 { margin-top: 2.25rem; }
+
+/* map pin declutter badge ("+N" on grouped pins, tap to zoom in) */
+.vpill .vclu { position: absolute; top: -10px; inset-inline-end: -10px; min-width: 22px; height: 22px; padding: 0 4px; border-radius: 999px; background: #1d1e22; color: #fff; font-size: 11px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 0 0 2px #fff; cursor: zoom-in; }
+.vpill.area.sm { height: 24px; padding-inline: 8px; font-size: 11px; }
+.vpill.zone { background: #f6f6f4; color: #5a5e66; font-size: 11.5px; box-shadow: 0 0 0 1px #d8d8d3; }
+.vpill.zone b { color: #767a83; }
+/* keep Leaflet's internal z-indexes (panes 400, controls 1000) inside the map box so sheets/modals (z 80–81) stay on top */
+.leaflet-container { isolation: isolate; }

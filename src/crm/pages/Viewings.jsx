@@ -1,16 +1,15 @@
 import { useState } from 'react';
-import { useCrm, ViewingModal } from '../CrmApp.jsx';
+import { useCrm, ViewingModal, OsPage, Av, Badge, VIEW_TONE } from '../CrmApp.jsx';
 import { useAuth } from '../../lib/auth.jsx';
 import { useDocTitle } from '../../lib/hooks.js';
-import { AR_DAYS, dateShort, hhmm } from '../../lib/format.js';
-import { Chip } from '../../components/ui.jsx';
-import { PageTitle } from '../../staff/Shell.jsx';
+import { AR_DAYS, AR_MONTHS, dateShort, hhmm } from '../../lib/format.js';
+import { Btn, Chip, Icon } from '../../components/ui.jsx';
 
 // Erbil work week: Saturday → Thursday. Friday is the day off but still drawn (muted) so a visit booked
 // on a Friday is never hidden from the calendar.
 const weekStart = (d) => { const x = new Date(d); x.setHours(0, 0, 0, 0); x.setDate(x.getDate() - ((x.getDay() + 1) % 7)); return x; };
-const navBtn = { width: 34, height: 34, borderRadius: 10, border: '1px solid #d8d8d3', background: '#fff', display: 'grid', placeItems: 'center', cursor: 'pointer' };
-const STATUS_COLOR = { confirmed: '#c8102e', pending: '#b26a00', second: '#1d1e22', done: '#0f8a4f', cancelled: '#9da0a7' };
+// Event card tone per status (reference os/ops.js week calendar)
+const EV = { confirmed: 'bg-white', pending: 'bg-red-50 border-red-200', second: 'bg-white', done: 'bg-paper-2 text-ink-500', cancelled: 'bg-paper-2 text-ink-400 line-through' };
 
 export default function Viewings() {
   useDocTitle('المعاينات');
@@ -27,36 +26,44 @@ export default function Viewings() {
 
   return (
     <>
-      <PageTitle sub={`الأسبوع ${dateShort(days[0])} – ${dateShort(days[6])} · ${week.length} معاينة`} action={<>
-        <Chip on={!mine} onClick={() => setMine(false)}>الكل</Chip>
-        <Chip on={mine} onClick={() => setMine(true)}>معايناتي</Chip>
-        <button style={navBtn} aria-label="الأسبوع السابق" onClick={() => shift(-1)}>›</button>
-        <button style={{ ...navBtn, width: 'auto', padding: '0 12px', fontSize: 13 }} onClick={() => setStart(weekStart(new Date()))}>اليوم</button>
-        <button style={navBtn} aria-label="الأسبوع التالي" onClick={() => shift(1)}>‹</button>
-      </>}>المعاينات</PageTitle>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,minmax(180px,1fr))', gap: 10, alignItems: 'start', overflowX: 'auto', paddingBottom: 8 }}>
+      <OsPage title={mine ? 'معايناتي' : 'المعاينات'} sub={mine ? 'المعاينات التي أنت وسيطها فقط' : 'كل الوسطاء · الأسبوع من السبت إلى الخميس'} actions={<>
+        <Chip small on={!mine} onClick={() => setMine(false)}>الكل</Chip>
+        <Chip small on={mine} onClick={() => setMine(true)}>معايناتي</Chip>
+      </>} />
+      <div className="flex flex-wrap items-center gap-2 mb-3">
+        <Btn size="sm" className="!h-9 !px-3" aria-label="الأسبوع السابق" onClick={() => shift(-1)}><Icon name="chev" size={15} /></Btn>
+        <Btn size="sm" className="!h-9" onClick={() => setStart(weekStart(new Date()))}>هذا الأسبوع</Btn>
+        <Btn size="sm" className="!h-9 !px-3" aria-label="الأسبوع التالي" onClick={() => shift(1)}><Icon name="chev" size={15} className="flip-rtl" /></Btn>
+        <span className="font-semibold text-[14px] ms-1 num">{dateShort(days[0])} – {dateShort(days[6])} {days[6].getFullYear()}</span>
+        <span className="ms-auto lbl">{week.length} معاينة هذا الأسبوع</span>
+      </div>
+      <div className="os-card overflow-x-auto"><div className="grid grid-cols-7 min-w-[880px]">
         {days.map((d) => {
           const items = week.filter((v) => v.at.toDateString() === d.toDateString()).sort((a, b) => a.at - b.at);
           const isToday = d.toDateString() === today;
           const off = d.getDay() === 5; // Friday
           return (
-            <div key={d.toISOString()} style={{ background: off ? '#fafaf8' : '#fff', border: `1px solid ${isToday ? '#1d1e22' : '#e7e7e3'}`, borderRadius: 16, minHeight: 420, overflow: 'hidden' }}>
-              <div style={{ padding: '12px 14px', borderBottom: '1px solid #e7e7e3' }}><div style={{ fontWeight: 600, fontSize: 14, color: off ? '#9da0a7' : undefined }}>{AR_DAYS[d.getDay()]}{isToday && <span style={{ color: '#c8102e', fontSize: 12 }}> · اليوم</span>}{off && <span style={{ fontSize: 12, fontWeight: 500 }}> · عطلة</span>}</div><div style={{ fontSize: 12, color: '#767a83' }}>{dateShort(d)}</div></div>
-              <div style={{ padding: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div key={d.toISOString()} className={`border-e hair last:border-e-0 min-h-[380px] flex flex-col ${off ? 'bg-paper-2/40' : ''}`}>
+              <div className={`px-3 py-2.5 border-b hair text-start ${isToday ? 'bg-red-50' : ''}`}>
+                <span className={`block text-[11.5px] font-semibold ${isToday ? 'text-red' : off ? 'text-ink-300' : 'text-ink-500'}`}>{AR_DAYS[d.getDay()]}{isToday && ' · اليوم'}{off && ' · عطلة'}</span>
+                <span className={`block text-[17px] font-semibold num ${off ? 'text-ink-400' : ''}`}>{d.getDate()} <span className="text-[11.5px] font-medium text-ink-400">{AR_MONTHS[d.getMonth()]}</span></span>
+              </div>
+              <div className="p-2 grid gap-1.5 content-start flex-1">
                 {items.map((v) => (
-                  <button key={v.id} onClick={() => setModal(v)} style={{ textAlign: 'start', border: 0, borderInlineStart: `3px solid ${STATUS_COLOR[v.status]}`, background: '#f6f6f4', borderRadius: 10, padding: 10, cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 6, width: '100%', opacity: v.status === 'cancelled' ? 0.55 : 1 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5 }}><b>{hhmm(v.at)}</b><span style={{ color: '#767a83' }}>{v.statusLabel}</span></div>
-                    <div style={{ fontWeight: 600, fontSize: 13.5 }}>{v.contact?.name || '—'}</div>
-                    {v.listing && <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>{v.listing.img && <img src={v.listing.img} alt="" style={{ width: 36, height: 28, borderRadius: 6, objectFit: 'cover' }} />}<div style={{ fontSize: 12, minWidth: 0 }}><div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v.listing.title}</div><div style={{ color: '#767a83' }}>{v.listing.areaName}</div></div></div>}
-                    {v.agent && <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11.5, color: '#767a83' }}>{v.agent.img && <img src={v.agent.img} alt="" style={{ width: 16, height: 16, borderRadius: 999, objectFit: 'cover' }} />}{v.agent.name}</div>}
+                  <button key={v.id} type="button" onClick={() => setModal(v)} className={`w-full text-start rounded-[10px] px-2.5 py-2 text-[12px] border hair hover:border-ink-300 transition-colors ${EV[v.status] || 'bg-white'}`}>
+                    <span className="flex items-center gap-1.5 font-semibold"><span className="num" dir="ltr">{hhmm(v.at)}</span><span className="ms-auto"><Badge tone={VIEW_TONE[v.status]}>{v.statusLabel}</Badge></span></span>
+                    <span className="block clamp-1 mt-1 text-[12.5px] font-semibold">{v.contact?.name || '—'}</span>
+                    {v.listing && <span className="block clamp-1 text-[11.5px] text-ink-500 mt-0.5"><span className="mono">{v.listing.id}</span> · {v.listing.title}{v.listing.areaName ? ` · ${v.listing.areaName}` : ''}</span>}
+                    {v.agent && <span className="flex items-center gap-1.5 mt-1.5"><Av name={v.agent.name} img={v.agent.img} seed={v.agent.id} size={16} /><span className="clamp-1 text-[11px] text-ink-500">{v.agent.name}</span></span>}
                   </button>
                 ))}
-                <button onClick={() => setModal({ preset: d })} style={{ height: 36, borderRadius: 10, border: '1px dashed #d8d8d3', background: 'transparent', fontSize: 12.5, color: '#9da0a7', cursor: 'pointer' }}>+ معاينة</button>
+                <button type="button" onClick={() => setModal({ preset: d })} className="h-9 rounded-[10px] border border-dashed border-line-2 text-[12px] text-ink-400 hover:text-ink hover:border-ink-300 transition-colors inline-flex items-center justify-center gap-1"><Icon name="plus" size={13} />معاينة</button>
               </div>
             </div>
           );
         })}
-      </div>
+      </div></div>
+      <p className="lbl mt-2">اضغط على المعاينة لتعديلها أو تغيير حالتها · «+ معاينة» داخل اليوم يحدد موعداً في ذلك اليوم.</p>
       {modal?.id && <ViewingModal v={modal} onClose={() => setModal(null)} />}
       {modal?.preset && <ViewingModal preset={{ date: modal.preset }} onClose={() => setModal(null)} />}
     </>

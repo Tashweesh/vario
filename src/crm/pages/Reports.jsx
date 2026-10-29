@@ -1,14 +1,12 @@
 import { useState } from 'react';
-import { useCrm } from '../CrmApp.jsx';
+import { useCrm, OsPage, Kpi, Sec, HBar, Bars, Av, Lmini } from '../CrmApp.jsx';
 import { useDocTitle } from '../../lib/hooks.js';
 import { STAGES } from '../../lib/format.js';
 import { Chip } from '../../components/ui.jsx';
-import { PageTitle } from '../../staff/Shell.jsx';
 
-const card = { background: '#fff', border: '1px solid #e7e7e3', borderRadius: 16, padding: 18 };
-const panel = { background: '#fff', border: '1px solid #e7e7e3', borderRadius: 16, padding: 22 };
 const PERIODS = { week: ['هذا الأسبوع', 7, 'الأسبوع الماضي'], month: ['هذا الشهر', 30, 'الشهر الماضي'], quarter: ['الربع', 90, 'الربع الماضي'] };
 
+// Reports (reference os/dashboard.js): KPI row → pipeline bars + team leaderboard → lead sources + top listings.
 export default function Reports() {
   useDocTitle('التقارير');
   const R = useCrm();
@@ -29,41 +27,68 @@ export default function Reports() {
   const fmtMin = (m) => (m == null ? '—' : m < 60 ? `${m} د` : m < 1440 ? `${(m / 60).toFixed(1)} س` : `${Math.round(m / 1440)} يوم`);
 
   const stages = STAGES.map(([id, label]) => ({ id, label, count: R.contacts.filter((c) => c.stage === id).length }));
-  const maxStage = Math.max(1, ...stages.map((s) => s.count));
   const srcBase = fresh.length ? fresh : R.contacts;
   const srcCount = srcBase.reduce((m, c) => ({ ...m, [c.source]: (m[c.source] || 0) + 1 }), {});
-  const sources = Object.entries(srcCount).sort((a, b) => b[1] - a[1]).map(([s, n]) => [s, Math.round((n / srcBase.length) * 100)]);
+  const sources = Object.entries(srcCount).sort((a, b) => b[1] - a[1]).map(([s, n]) => [s, Math.round((n / srcBase.length) * 100), n]);
+  const maxSrc = Math.max(1, ...sources.map((s) => s[2]));
   const top = [...R.listings].filter((l) => l.status !== 'draft').sort((a, b) => b.leads - a.leads).slice(0, 4);
-  const team = R.agents.filter((a) => a.active).map((g) => ({ ...g, leads: R.contacts.filter((c) => c.agent_id === g.id).length, listings: R.listings.filter((l) => l.agent_id === g.id).length, won: R.contacts.filter((c) => c.agent_id === g.id && c.stage === 'closed').length }));
-  const bar = (w, c) => <span style={{ height: 22, borderRadius: 6, background: '#f6f6f4', overflow: 'hidden' }}><span style={{ display: 'block', height: '100%', width: w + '%', background: c, borderRadius: 6, minWidth: w ? 4 : 0 }} /></span>;
+  const maxLeads = Math.max(1, ...top.map((l) => l.leads || 0));
+  const team = R.agents.filter((a) => a.active).map((g) => ({ ...g, leads: R.contacts.filter((c) => c.agent_id === g.id).length, listings: R.listings.filter((l) => l.agent_id === g.id).length, won: R.contacts.filter((c) => c.agent_id === g.id && c.stage === 'closed').length })).sort((a, b) => b.won - a.won || b.leads - a.leads);
+  const maxWon = Math.max(1, ...team.map((g) => g.won));
+  const viewRate = contacted ? Math.round((R.contacts.filter((c) => ['viewing', 'offer', 'closed'].includes(c.stage)).length / contacted) * 100) : 0;
+  const period = PERIODS[p][0];
 
   return (
     <>
-      <PageTitle action={Object.entries(PERIODS).map(([k, [t]]) => <Chip key={k} on={p === k} onClick={() => setP(k)}>{t}</Chip>)}>التقارير</PageTitle>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))', gap: 12 }}>
-        <div style={card}><div style={{ fontSize: 12.5, color: '#767a83' }}>عملاء جدد</div><div style={{ fontSize: 30, fontWeight: 700, marginTop: 4 }}>{fresh.length}</div><div style={{ fontSize: 12, color: delta == null ? '#767a83' : delta >= 0 ? '#0f8a4f' : '#c8102e', marginTop: 2 }}>{delta == null ? `لا بيانات عن ${PERIODS[p][2]}` : `${delta >= 0 ? '+' : ''}${delta}% عن ${PERIODS[p][2]}`}</div></div>
-        <div style={card}><div style={{ fontSize: 12.5, color: '#767a83' }}>معاينات</div><div style={{ fontSize: 30, fontWeight: 700, marginTop: 4 }}>{views.length}</div><div style={{ fontSize: 12, color: '#767a83', marginTop: 2 }}>{contacted ? Math.round((R.contacts.filter((c) => ['viewing', 'offer', 'closed'].includes(c.stage)).length / contacted) * 100) : 0}% من العملاء المتواصَل معهم</div></div>
-        <div style={card}><div style={{ fontSize: 12.5, color: '#767a83' }}>صفقات مغلقة</div><div style={{ fontSize: 30, fontWeight: 700, marginTop: 4 }}>{closed.length}</div><div style={{ fontSize: 12, color: '#767a83', marginTop: 2 }}>{closed.filter((c) => c.deal !== 'rent').length} بيع · {closed.filter((c) => c.deal === 'rent').length} إيجار</div></div>
-        <div style={card}><div style={{ fontSize: 12.5, color: '#767a83' }}>متوسط وقت الرد</div><div style={{ fontSize: 30, fontWeight: 700, marginTop: 4 }}>{fmtMin(avg)}</div><div style={{ fontSize: 12, color: avg != null && avg > 30 ? '#c8102e' : '#0f8a4f', marginTop: 2 }}>الهدف: أقل من 30 دقيقة</div></div>
+      <OsPage title="التقارير" sub="أداء المبيعات والفريق · عملاء جدد، معاينات، صفقات ووقت الرد" actions={Object.entries(PERIODS).map(([k, [t]]) => <Chip small key={k} on={p === k} onClick={() => setP(k)}>{t}</Chip>)} />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+        <Kpi label="عملاء جدد" value={fresh.length} icon="users" delta={delta} sub={delta == null ? `لا بيانات عن ${PERIODS[p][2]}` : `عن ${PERIODS[p][2]}`} />
+        <Kpi label="معاينات" value={views.length} icon="cal" sub={`${viewRate}% من العملاء المتواصَل معهم`} />
+        <Kpi label="صفقات مغلقة" value={closed.length} icon="key" sub={`${closed.filter((c) => c.deal !== 'rent').length} بيع · ${closed.filter((c) => c.deal === 'rent').length} إيجار`} />
+        <Kpi label="متوسط وقت الرد" value={fmtMin(avg)} icon="clock" tone={avg != null && avg > 30 ? 'red' : undefined} sub={<span className={avg != null && avg > 30 ? 'text-red' : 'text-ok'}>الهدف: أقل من 30 دقيقة</span>} />
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(min(100%,380px),1fr))', gap: 16, marginTop: 16, alignItems: 'start' }}>
-        <div style={panel}><div style={{ fontWeight: 600, marginBottom: 16 }}>قمع التحويل</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>{stages.map((s) => <div key={s.id} style={{ display: 'grid', gridTemplateColumns: '90px 1fr 40px', gap: 12, alignItems: 'center', fontSize: 13 }}><span>{s.label}</span>{bar(Math.round((s.count / maxStage) * 100), '#1d1e22')}<b>{s.count}</b></div>)}</div>
-        </div>
-        <div style={panel}><div style={{ fontWeight: 600, marginBottom: 16 }}>أداء الفريق</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>{team.map((g) => (
-            <div key={g.id} style={{ display: 'grid', gridTemplateColumns: '28px 1fr 64px 64px 56px', gap: 10, alignItems: 'center', fontSize: 13 }}>
-              {g.img ? <img src={g.img} alt="" style={{ width: 28, height: 28, borderRadius: 999, objectFit: 'cover' }} /> : <span style={{ width: 28, height: 28, borderRadius: 999, background: '#1d1e22' }} />}
-              <span style={{ fontWeight: 600 }}>{g.name}</span><span style={{ color: '#767a83' }}>{g.leads} عميل</span><span style={{ color: '#767a83' }}>{g.listings} عقار</span><span style={{ color: '#0f8a4f' }}>{g.won} صفقة</span>
+      <div className="grid lg:grid-cols-3 gap-4 items-start">
+        <Sec title="قمع التحويل" sub="العملاء المفتوحون حسب المرحلة" className="lg:col-span-2">
+          <Bars series={stages.map((s) => ({ label: s.label, value: s.count, color: s.id === 'new' ? '#C8102E' : s.id === 'closed' ? '#1F7A4D' : '#1D1E22' }))} h={180} />
+        </Sec>
+        <Sec title="أداء الفريق" sub={`الصفقات المغلقة لكل وسيط · ${period}`}>
+          {team.length === 0 ? <p className="lbl py-6 text-center">لا يوجد وسطاء نشطون.</p> : (
+            <div className="grid gap-1">
+              {team.map((g, i) => (
+                <div key={g.id} className="grid items-center gap-x-2.5 gap-y-1 rounded-[10px] px-1.5 py-2 hover:bg-paper-2" style={{ gridTemplateColumns: '20px minmax(0,1fr) auto' }}>
+                  <span className={`text-[12px] font-semibold num ${i === 0 ? 'text-red' : 'text-ink-400'}`}>{i + 1}</span>
+                  <span className="flex items-center gap-2 min-w-0"><Av name={g.name} img={g.img} seed={g.id} size={26} /><span className="min-w-0"><span className="block text-[13px] font-semibold clamp-1">{g.name}</span><span className="block text-[11.5px] text-ink-500 clamp-1">{g.leads} عميل · {g.listings} عقار</span></span></span>
+                  <span className="text-[13px] font-semibold num text-ok">{g.won} صفقة</span>
+                  <span /><span className="col-span-2"><HBar v={g.won} max={maxWon} color={i === 0 ? '#C8102E' : '#3D4047'} h={4} /></span>
+                </div>
+              ))}
             </div>
-          ))}</div>
-        </div>
-        <div style={panel}><div style={{ fontWeight: 600, marginBottom: 16 }}>مصادر العملاء</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, fontSize: 13 }}>{sources.map(([s, pct]) => <div key={s} style={{ display: 'grid', gridTemplateColumns: '90px 1fr 40px', gap: 12, alignItems: 'center' }}><span>{s}</span>{bar(pct, '#c8102e')}<b>{pct}%</b></div>)}</div>
-        </div>
-        <div style={panel}><div style={{ fontWeight: 600, marginBottom: 16 }}>أكثر العقارات طلباً</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>{top.map((l) => <div key={l.id} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13 }}>{l.img && <img src={l.img} alt="" style={{ width: 40, height: 32, borderRadius: 6, objectFit: 'cover' }} />}<span style={{ flex: 1, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{l.title}</span><span style={{ color: '#767a83' }}>{l.leads} طلب</span></div>)}</div>
-        </div>
+          )}
+        </Sec>
+        <Sec title="مصادر العملاء" sub={`${srcBase.length} عميل · ${fresh.length ? period : 'كل الفترات'}`}>
+          {sources.length === 0 ? <p className="lbl py-6 text-center">لا يوجد عملاء في هذه الفترة.</p> : (
+            <div className="grid gap-2.5">
+              {sources.map(([s, pct, n]) => (
+                <div key={s} className="block rounded-[8px] -mx-1.5 px-1.5 py-1">
+                  <div className="flex items-center justify-between gap-2 mb-1.5"><span className="text-[12.5px] text-ink-600">{s}</span><span className="text-[12px] text-ink-500 num whitespace-nowrap"><b className="text-ink font-semibold">{n}</b> · {pct}%</span></div>
+                  <HBar v={n} max={maxSrc} color={s === 'الموقع' ? '#C8102E' : '#3D4047'} h={5} />
+                </div>
+              ))}
+            </div>
+          )}
+        </Sec>
+        <Sec title="أكثر العقارات طلباً" sub="حسب عدد الطلبات على كل عقار" className="lg:col-span-2">
+          {top.length === 0 ? <p className="lbl py-6 text-center">لا توجد عقارات منشورة بعد.</p> : (
+            <div className="grid gap-2.5">
+              {top.map((l) => (
+                <div key={l.id} className="flex flex-wrap items-center gap-3 justify-between">
+                  <Lmini l={l} className="flex-1 min-w-[200px]" />
+                  <span className="flex items-center gap-3 flex-none"><span className="w-24 hidden sm:block"><HBar v={l.leads || 0} max={maxLeads} h={5} /></span><span className="num text-[13px] font-semibold whitespace-nowrap">{l.leads || 0} طلب</span></span>
+                </div>
+              ))}
+            </div>
+          )}
+        </Sec>
       </div>
     </>
   );

@@ -2,12 +2,12 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useCms } from '../CmsApp.jsx';
 import { useDocTitle } from '../../lib/hooks.js';
 import { TYPE_GROUPS, groupTypes } from '../../lib/format.js';
-import { Chip, Empty, StatusPill } from '../../components/ui.jsx';
-import { PageTitle, ScrollX, TABLE, editBtn, thead, trow } from '../../staff/Shell.jsx';
+import { Chip, Icon } from '../../components/ui.jsx';
+import { Av, Lmini, Osb, OsEmpty, OsTable, OsTabs, PageTitle, StatusBadge } from '../../staff/Shell.jsx';
 
-const COLS = '48px minmax(200px,1.6fr) 90px 1fr 110px 100px 120px 90px 70px';
-const filterSel = { height: 36, border: '1px solid #e7e7e3', borderRadius: 10, background: '#fff', padding: '0 12px', fontSize: 13, outline: 0 };
+const SEL = 'field !h-9 !text-[13px] !rounded-[10px] !ps-3 !pe-8 !w-auto flex-none';
 
+// Ported from the reference's inventory table (os/inventory.js /listings): status tabs, filter row, dense os-tbl.
 export default function Listings() {
   useDocTitle('العقارات');
   const C = useCms();
@@ -21,39 +21,34 @@ export default function Listings() {
     (!g('agent') || l.agent_id === g('agent')) && (!q || [l.id, l.title, l.areaName, l.projName].join(' ').toLowerCase().includes(q)));
   const list = base.filter((l) => !g('status') || l.status === g('status'));
   const cnt = (s) => base.filter((l) => l.status === s).length;
+  const live = C.listings.filter((l) => l.status === 'live').length;
 
   return (
     <>
-      <PageTitle action={<>
-        <Chip on={!g('status')} onClick={() => set('status', '')}>الكل {base.length}</Chip>
-        {[['live', 'منشور'], ['draft', 'مسودة'], ['reserved', 'محجوز'], ['sold', 'مباع']].map(([s, t]) => <Chip key={s} on={g('status') === s} onClick={() => set('status', s)}>{t} {cnt(s)}</Chip>)}
-      </>}>العقارات</PageTitle>
-      <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
-        <select className="sel" aria-label="النوع" style={filterSel} value={g('type')} onChange={(e) => set('type', e.target.value)}><option value="">النوع: الكل</option>{TYPE_GROUPS.map(([k, t]) => <option key={k} value={k}>{t}</option>)}</select>
-        <select className="sel" aria-label="بيع أو إيجار" style={filterSel} value={g('deal')} onChange={(e) => set('deal', e.target.value)}><option value="">بيع / إيجار</option><option value="sale">للبيع</option><option value="rent">للإيجار</option></select>
-        <select className="sel" aria-label="المنطقة" style={filterSel} value={g('area')} onChange={(e) => set('area', e.target.value)}><option value="">المنطقة</option>{C.areas.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</select>
-        <select className="sel" aria-label="الوسيط" style={filterSel} value={g('agent')} onChange={(e) => set('agent', e.target.value)}><option value="">الوسيط</option>{C.agents.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</select>
-        {q && <Chip on onClick={() => set('q', '')}>«{g('q')}» ✕</Chip>}
+      <PageTitle sub={`${live} ظاهر بالموقع · ${C.listings.length - live} مخفي`} action={<a href="/" target="_blank" rel="noreferrer" className="btn btn-line btn-sm"><Icon name="globe" size={15} />الموقع</a>}>العقارات</PageTitle>
+      <OsTabs items={[['', 'الكل', base.length], ['live', 'منشور', cnt('live')], ['draft', 'مسودة', cnt('draft')], ['reserved', 'محجوز', cnt('reserved')], ['sold', 'مباع', cnt('sold')]]} active={g('status')} onChange={(k) => set('status', k)} />
+      <div className="flex flex-wrap items-center gap-2 mb-3">
+        <select className={SEL} aria-label="النوع" value={g('type')} onChange={(e) => set('type', e.target.value)}><option value="">النوع: الكل</option>{TYPE_GROUPS.map(([k, t]) => <option key={k} value={k}>{t}</option>)}</select>
+        <select className={SEL} aria-label="بيع أو إيجار" value={g('deal')} onChange={(e) => set('deal', e.target.value)}><option value="">بيع / إيجار</option><option value="sale">للبيع</option><option value="rent">للإيجار</option></select>
+        <select className={SEL} aria-label="المنطقة" value={g('area')} onChange={(e) => set('area', e.target.value)}><option value="">كل المناطق</option>{C.areas.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</select>
+        <select className={SEL} aria-label="الوسيط" value={g('agent')} onChange={(e) => set('agent', e.target.value)}><option value="">كل الوسطاء</option>{C.agents.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</select>
+        {q && <Chip small on onClick={() => set('q', '')}>«{g('q')}»<Icon name="close" size={13} /></Chip>}
       </div>
-      {list.length === 0 ? <Empty>لا توجد عقارات مطابقة</Empty> : (
-        <div style={TABLE}>
-          <ScrollX min={1040}>
-            <div style={thead(COLS)}><span /><span>العقار</span><span>الرقم</span><span>المنطقة</span><span>السعر</span><span>الحالة</span><span>الوسيط</span><span>مشاهدات / طلبات</span><span /></div>
-            {list.map((l) => (
-              <div key={l.id} className="h-row" style={trow(COLS)}>
-                {l.img ? <img src={l.img} alt="" style={{ width: 48, height: 38, borderRadius: 8, objectFit: 'cover' }} /> : <span style={{ width: 48, height: 38, borderRadius: 8, background: '#f6f6f4' }} />}
-                <div style={{ minWidth: 0 }}><div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{l.title}</div><div style={{ fontSize: 12, color: '#767a83', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{l.dealLabel} · {l.facts}</div></div>
-                <span style={{ color: '#5a5e68', fontSize: 12.5 }}>{l.id}</span>
-                <span>{l.areaName}</span>
-                <span style={{ fontWeight: 600 }} dir="ltr">{l.priceText}</span>
-                <StatusPill label={l.statusLabel} color={l.statusColor} bg={l.statusBg} />
-                <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5, minWidth: 0 }}>{l.agent?.img && <img src={l.agent.img} alt="" style={{ width: 22, height: 22, borderRadius: 999, objectFit: 'cover' }} />}<span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{l.agent?.name || '—'}</span></span>
-                <span style={{ fontSize: 12.5, color: '#5a5e68' }}>{l.views} / {l.leads}</span>
-                <button style={editBtn} onClick={() => nav(`/cms/listings/${l.id}`)}>{l.canEdit ? 'تعديل' : 'عرض'}</button>
-              </div>
-            ))}
-          </ScrollX>
-        </div>
+      <div className="text-[12.5px] text-ink-500 mb-2 num">{list.length} عقار</div>
+      {list.length === 0 ? <OsEmpty icon="building" title="ماكو عقارات تطابق">جرّب تغيّر الفلاتر أو الحالة.</OsEmpty> : (
+        <OsTable head={['العقار', 'النوع', 'السعر', 'الحالة', 'الوسيط', { label: 'مشاهدات / طلبات', cls: 'num' }, '']}>
+          {list.map((l) => (
+            <tr key={l.id} className="cursor-pointer" onClick={() => nav(`/cms/listings/${l.id}`)}>
+              <td><div className="min-w-[230px]"><Lmini img={l.img} title={l.title} id={l.id} sub={`${l.areaName}${l.projName ? ' · ' + l.projName : ''}`} /></div></td>
+              <td><Osb tone={l.deal === 'rent' ? 'red' : 'ink'}>{l.dealLabel}</Osb></td>
+              <td className="whitespace-nowrap"><span className="num font-semibold" dir="ltr">{l.priceText}</span><span className="block text-[11.5px] text-ink-500">{l.facts}</span></td>
+              <td><StatusBadge status={l.status} label={l.statusLabel} /></td>
+              <td><span className="inline-flex items-center gap-2 min-w-[130px]">{l.agent ? <><Av src={l.agent.img} name={l.agent.name} size={22} /><span className="clamp-1 text-[13px]">{l.agent.name}</span></> : <span className="text-ink-400">—</span>}</span></td>
+              <td className="num whitespace-nowrap">{l.views} <span className="text-ink-300">/</span> <b>{l.leads}</b></td>
+              <td className="text-end"><button type="button" className="btn btn-line btn-sm !h-8" onClick={(e) => { e.stopPropagation(); nav(`/cms/listings/${l.id}`); }}>{l.canEdit ? 'تعديل' : 'عرض'}</button></td>
+            </tr>
+          ))}
+        </OsTable>
       )}
     </>
   );

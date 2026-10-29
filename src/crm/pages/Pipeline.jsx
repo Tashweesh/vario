@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useCrm, ViewingModal } from '../CrmApp.jsx';
+import { useCrm, ViewingModal, Av, Badge, DEAL_AR, OsPage } from '../CrmApp.jsx';
 import { useAuth } from '../../lib/auth.jsx';
 import { supabase } from '../../lib/supabase.js';
 import { useDocTitle } from '../../lib/hooks.js';
 import { STAGES, usd } from '../../lib/format.js';
-import { Chip, useToast } from '../../components/ui.jsx';
-import { PageTitle } from '../../staff/Shell.jsx';
+import { Chip, Icon, Img, useToast } from '../../components/ui.jsx';
+
+// Column dot colour per stage (reference os/crm.js pipeline board)
+const DOT = { new: 'bg-red', closed: 'bg-ok' };
 
 export default function Pipeline() {
   useDocTitle('المسار');
@@ -35,46 +37,53 @@ export default function Pipeline() {
     await R.reload();
     setLocal((s) => { const n = { ...s }; delete n[c.id]; return n; });
   };
+  const openViewing = (e, id) => { e.stopPropagation(); setViewingFor(id); };
 
   return (
     <>
-      <PageTitle sub="اسحب البطاقة بين الأعمدة لتغيير المرحلة · إسقاطها في «معاينة» يفتح جدولة الموعد" action={<>
-        <Chip on={!mine} onClick={() => setMine(false)}>كل الفريق</Chip>
-        <Chip on={mine} onClick={() => setMine(true)}>عملائي فقط</Chip>
-        <Chip on={deal === 'sale'} onClick={() => setDeal(deal === 'sale' ? '' : 'sale')}>شراء</Chip>
-        <Chip on={deal === 'rent'} onClick={() => setDeal(deal === 'rent' ? '' : 'rent')}>إيجار</Chip>
-      </>}>المسار</PageTitle>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,minmax(200px,1fr))', gap: 12, overflowX: 'auto', alignItems: 'start', paddingBottom: 8 }}>
+      <OsPage title="المسار" sub="اسحب البطاقة بين الأعمدة لتغيير المرحلة · إسقاطها في «معاينة» يفتح جدولة الموعد" actions={<>
+        <Chip small on={!mine} onClick={() => setMine(false)}>كل الفريق</Chip>
+        <Chip small on={mine} onClick={() => setMine(true)}>عملائي فقط</Chip>
+        <span className="w-px h-5 bg-line mx-1 hidden sm:block" />
+        <Chip small on={deal === 'sale'} onClick={() => setDeal(deal === 'sale' ? '' : 'sale')}>شراء</Chip>
+        <Chip small on={deal === 'rent'} onClick={() => setDeal(deal === 'rent' ? '' : 'rent')}>إيجار</Chip>
+      </>} />
+      <div className="flex gap-3 overflow-x-auto snap-x pb-3 -mx-4 px-4 lg:mx-0 lg:px-0 items-start">
         {STAGES.map(([id, label]) => {
           const items = list.filter((c) => c.stage === id);
           const value = items.reduce((s, c) => s + (c.deal === 'sale' && c.budget ? c.budget : 0), 0);
           return (
-            <div key={id} onDragOver={(e) => { e.preventDefault(); setOver(id); }} onDragLeave={() => setOver(null)} onDrop={(e) => { e.preventDefault(); drop(id); }}
-              style={{ background: over === id ? '#e3e3df' : '#eeeeeb', borderRadius: 16, padding: 10, minHeight: 400, transition: 'background .15s' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 6px 10px' }}><div style={{ fontWeight: 600, fontSize: 14 }}>{label} <span style={{ color: '#767a83', fontWeight: 500 }}>{items.length}</span></div><div style={{ fontSize: 11.5, color: '#767a83' }} dir="ltr">{usd(value)}</div></div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <section key={id} data-col={id} onDragOver={(e) => { e.preventDefault(); setOver(id); }} onDragLeave={() => setOver(null)} onDrop={(e) => { e.preventDefault(); drop(id); }}
+              className={`flex-none w-[84vw] sm:w-[288px] snap-start flex flex-col rounded-[16px] bg-paper-3/60 border hair transition-colors min-h-[380px] ${over === id ? 'drop-target !border-ink !bg-white' : ''}`}>
+              <header className="px-3 pt-3 pb-2">
+                <div className="flex items-center gap-2"><span className={`w-2 h-2 rounded-full ${DOT[id] || 'bg-ink'}`} /><span className="font-semibold text-[13.5px] clamp-1 flex-1">{label}</span><span className="os-cnt">{items.length}</span></div>
+                <div className="text-[11.5px] text-ink-500 mt-1">مجموع الميزانيات <b className="text-ink num" dir="ltr">{usd(value)}</b></div>
+              </header>
+              <div className="flex-1 px-2 pb-2 grid gap-2 content-start min-h-[120px]">
                 {items.map((c) => (
-                  <button key={c.id} draggable onDragStart={(e) => { setDrag(c.id); e.dataTransfer.effectAllowed = 'move'; }} onDragEnd={() => setDrag(null)} onClick={() => nav(`/crm/contacts/${c.id}`)} className={'h-shadow-sm' + (drag === c.id ? ' dragging' : '')}
-                    style={{ textAlign: 'start', background: '#fff', border: '1px solid #e7e7e3', borderRadius: 12, padding: 12, cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 8, width: '100%' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}><div style={{ fontWeight: 600, fontSize: 14 }}>{c.name}</div>{c.isHot && <span style={{ width: 8, height: 8, borderRadius: 999, background: '#c8102e' }} />}</div>
-                    {c.listing && (
-                      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                        {c.listing.img && <img src={c.listing.img} alt="" style={{ width: 40, height: 32, borderRadius: 6, objectFit: 'cover', flex: 'none' }} />}
-                        <div style={{ minWidth: 0, fontSize: 12 }}><div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.listing.title}</div><div style={{ color: '#767a83' }}>{c.listing.id} · {c.listing.priceText}</div></div>
+                  <button key={c.id} type="button" draggable onDragStart={(e) => { setDrag(c.id); e.dataTransfer.effectAllowed = 'move'; }} onDragEnd={() => setDrag(null)} onClick={() => nav(`/crm/contacts/${c.id}`)}
+                    className={`block w-full text-start bg-white rounded-[12px] border hair p-3 hover:border-ink-300 transition-colors cursor-grab active:cursor-grabbing ${drag === c.id ? 'dragging' : ''}`}>
+                    <div className="flex items-start gap-2">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5"><span className="font-semibold text-[13.5px] clamp-1">{c.name}</span>{c.isHot && <span className="w-2 h-2 rounded-full bg-red flex-none" title="ساخن" />}</div>
+                        <div className="text-[12px] text-ink-500 clamp-1 mt-0.5">{c.listing ? <><span className="num">{c.listing.priceText}</span>{c.listing.areaName ? ` · ${c.listing.areaName}` : ''}</> : c.budget ? <>ميزانية <span className="num">{c.budgetText}</span></> : 'الطلب غير محدد'}</div>
                       </div>
-                    )}
-                    {c.note && <div style={{ fontSize: 12, color: '#5a5e68', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{c.note}</div>}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11.5, color: '#767a83', gap: 6 }}>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: c.agent ? '#767a83' : '#c8102e' }}>{c.agent?.img && <img src={c.agent.img} alt="" style={{ width: 18, height: 18, borderRadius: 999, objectFit: 'cover' }} />}{c.agentName}</span>
-                      <span>{c.last}</span>
+                      {c.listing && <Img src={c.listing.img} className="w-11 h-9 rounded-[8px] flex-none" />}
                     </div>
-                    <span role="button" tabIndex={0} aria-label={`حدد معاينة لـ ${c.name}`} className="h-border"
-                      onClick={(e) => { e.stopPropagation(); setViewingFor(c.id); }} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); setViewingFor(c.id); } }}
-                      style={{ alignSelf: 'flex-start', fontSize: 11.5, color: '#1d1e22', border: '1px solid #d8d8d3', borderRadius: 999, padding: '3px 10px', background: '#f6f6f4' }}>+ معاينة</span>
+                    {c.listing && <div className="text-[12px] clamp-1 mt-1.5"><span className="mono text-ink-400">{c.listing.id}</span> · {c.listing.title}</div>}
+                    {c.note && <div className="text-[12px] text-ink-600 leading-relaxed clamp-2 mt-1.5">{c.note}</div>}
+                    <div className="flex items-center gap-1.5 mt-2.5">
+                      {c.agent ? <Av name={c.agent.name} img={c.agent.img} seed={c.agent.id} size={22} /> : <Badge tone="red">غير مخصّص</Badge>}
+                      {c.deal && <Badge tone={c.deal === 'rent' ? 'red' : 'ink'}>{DEAL_AR[c.deal]}</Badge>}
+                      <span className="ms-auto text-[11px] text-ink-400 whitespace-nowrap inline-flex items-center gap-1" title="آخر نشاط"><Icon name="clock" size={12} />{c.last}</span>
+                      <span role="button" tabIndex={0} aria-label={`حدد معاينة لـ ${c.name}`} title="حدد معاينة" className="icon-btn !w-7 !h-7 -me-1 text-ink-500 hover:bg-paper-2 hover:text-ink"
+                        onClick={(e) => openViewing(e, c.id)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openViewing(e, c.id); } }}><Icon name="cal" size={15} /></span>
+                    </div>
                   </button>
                 ))}
+                {!items.length && <div className="text-center text-[12px] text-ink-400 py-6 border border-dashed border-line-2 rounded-[12px]">اسحب هنا</div>}
               </div>
-            </div>
+            </section>
           );
         })}
       </div>

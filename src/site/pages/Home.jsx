@@ -1,33 +1,49 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useRef, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useSite } from '../SiteData.jsx';
-import { useDocTitle, useLayout } from '../../lib/hooks.js';
-import { TYPE_GROUPS, count, starSplit } from '../../lib/format.js';
-import { Btn, IconSearch } from '../../components/ui.jsx';
-import { CardGrid, SectionHead } from '../parts.jsx';
-import { MapView, esc } from '../../components/MapView.jsx';
+import { useDocTitle } from '../../lib/hooks.js';
+import { TYPE_AR, TYPE_GROUPS, count, starSplit } from '../../lib/format.js';
+import { Icon, Img, Seg } from '../../components/ui.jsx';
+import { ListingCard, SectionHead } from '../parts.jsx';
+import { MapExplorer } from './MapPage.jsx';
 
-const CAT_ICONS = {
-  apartment: 'M6 21V5l6-2 6 2v16M9 8h1M14 8h1M9 12h1M14 12h1M9 16h1M14 16h1',
-  house: 'M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z',
-  villa: 'M2 20h20M4 20V10l5-4 5 4v10M14 20v-7h6v7M7 13h2',
-  land: 'M3 17l6-3 6 3 6-3v4l-6 3-6-3-6 3zM3 10l6-3 6 3 6-3',
-  commercial: 'M4 10h16v10H4zM4 10l2-5h12l2 5M10 20v-5h4v5',
-  compound: 'M3 21V9l5-3v15M8 21V12l5-3v12M13 21V13l8-4v12M3 21h18',
-};
-const searchLabel = { display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '10px 18px', minHeight: 64, borderInlineEnd: '1px solid #e7e7e3' };
-const searchCap = { fontSize: 12, fontWeight: 600, color: '#767a83' };
-const searchSel = { border: 0, outline: 0, fontSize: 15, fontWeight: 500, padding: '2px 0', background: 'transparent', width: '100%' };
-const catBtn = { textAlign: 'start', padding: 18, borderRadius: 18, border: '1px solid #e7e7e3', background: '#fff', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 14 };
-const toolBtn = { textAlign: 'start', padding: 20, borderRadius: 18, border: '1px solid #e7e7e3', background: '#fff', cursor: 'pointer' };
+// Homepage ported from the design reference (pages/home.js): hero + unified search, categories, featured rail,
+// neighbourhoods + map, tools, owners. Sections are gated by S.settings.sections exactly as before.
+
+const HS_STYLE = `.hs-f{display:flex;flex-direction:column;justify-content:center;padding:10px 18px;min-height:64px;border-bottom:1px solid var(--line)}@media(min-width:768px){.hs-f{border-bottom:0}}.hs-l{font-size:12px;font-weight:600;color:#767A83}.hs-i{width:100%;background:transparent;outline:none;font-size:15px;font-weight:500;appearance:none;cursor:pointer;padding:2px 0}.hs-i::placeholder{color:#9DA0A7;font-weight:400}`;
+
+const CAT_ICON = { apartment: 'tower', house: 'home', villa: 'villa', land: 'land', commercial: 'shop', compound: 'compound', installments: 'percent', ready: 'key' };
+const TOOLS = [
+  ['/tools/match', 'sparkle', 'ڤايرو ماتش', 'شراء أو إيجار أو استثمار — ونرتبلك الأنسب', 'ابدأ'],
+  ['/tools/budget', 'wallet', 'مستكشف الميزانية', 'شنو أگدر أشتري أو أأجر؟', 'استكشف'],
+  ['/tools/rent', 'key', 'مختبر الإيجار', 'قدرتك على الإيجار وتكلفة السكن', 'احسب'],
+  ['/tools/payment', 'chart', 'مختبر الدفع', 'خطط شراءك بالتقسيط', 'خطّط'],
+  ['/compare', 'compare', 'المقارنة', 'جنب بعض، نفس النوع ويا نفس النوع', 'قارن'],
+  ['/tools/tour', 'route', 'الجولة الذكية', 'نظّم يوم المعاينات', 'نظّم'],
+  ['/tools/tower', 'elevator', 'مستكشف البرج', 'اختار الطابق والوحدة بالشكل', 'استكشف'],
+  ['/tools/atlas', 'trend', 'أطلس العقار', 'أسعار المتر حسب المنطقة', 'افتح'],
+];
 
 export default function Home() {
   useDocTitle('');
   const S = useSite();
-  const L = useLayout();
   const nav = useNavigate();
   const [deal, setDeal] = useState('sale');
   const [f, setF] = useState({ q: '', type: '', max: '', pay: '' });
+  const [bm, setBm] = useState('sale'); // explore-by-budget mode (reference: budget())
+
+  // short money for the budget bands: $100K / $1.2M in USD, full figure in IQD
+  const short = (v) => (S.currency === 'USD' ? '$' + (v >= 1e6 ? (v / 1e6).toFixed(2).replace(/\.?0+$/, '') + 'M' : v >= 1e4 ? Math.round(v / 1000) + 'K' : v) : S.money(v));
+  const rentShort = (v) => `${short(v)}/شهر`;
+  const BANDS = bm === 'rent' ? [[0, 500], [500, 1000], [1000, 2000], [2000, Infinity]] : [[0, 100000], [100000, 200000], [200000, 400000], [400000, Infinity]];
+  const bands = BANDS.map(([a, b], i) => {
+    const list = S.live.filter((l) => l.deal === bm && l.amount >= a && l.amount < b);
+    const types = [...new Set(list.map((l) => TYPE_AR[l.type]))].filter(Boolean).slice(0, 3).join(' · ');
+    const fmt = bm === 'rent' ? rentShort : short;
+    const label = i === 0 ? <>أقل من <bdi>{fmt(b)}</bdi></> : b === Infinity ? <><bdi>{fmt(a)}</bdi>+</> : <><bdi>{short(a)}</bdi>–<bdi>{fmt(b)}</bdi></>;
+    const to = `/${bm === 'rent' ? 'rent' : 'buy'}?${a ? `min=${a}` : ''}${a && b !== Infinity ? '&' : ''}${b !== Infinity ? `max=${b}` : ''}`;
+    return { i, label, types, n: list.length, to };
+  });
   const sec = { types: true, featured: true, areas: true, tools: true, owners: true, ...(S.settings.sections || {}) };
 
   const search = () => {
@@ -45,139 +61,219 @@ export default function Home() {
     { k: 'ready', label: 'جاهز للسكن', n: count(S.live.filter((l) => l.type !== 'land' && (!l.project || l.project.status === 'ready')).length, 'listing'), to: '/buy?pay=ready' },
   ];
 
+  const area0 = S.homeAreas[0] || S.areas[0];
+  const tries = deal === 'rent'
+    ? [['مفروش', '/rent?furn=furnished'], ['متاح هسه', '/rent?furn=now'], ['بيوت عوائل', '/rent?type=house'], ['مكاتب ومحلات', '/rent?type=commercial'], ...(area0 ? [[`شقق ب${area0.short}`, `/rent?type=apartment&area=${area0.id}`]] : [])]
+    : [['تقسيط', '/buy?pay=installments'], ['فلل جاهزة', '/buy?type=villa&pay=ready'], ['أراضي', '/buy?type=land'], ['أقل من 150 ألف', '/buy?max=150000'], ...(area0 ? [[`بيوت ب${area0.short}`, `/buy?type=house&area=${area0.id}`]] : [])];
+
+  // featured rails: listings flagged "featured" first, then the newest verified ones with type variety (max 2 per type), 8 each
+  const pickVar = (arr, n) => { const seen = {}; return arr.filter((l) => { seen[l.type] = (seen[l.type] || 0) + 1; return seen[l.type] <= 2; }).slice(0, n); };
+  const withFeat = (deal, rest) => { const f = S.featured.filter((l) => l.deal === deal).slice(0, 8); const ids = new Set(f.map((l) => l.id)); return [...f, ...pickVar(rest.filter((l) => !ids.has(l.id)), 8)].slice(0, 8); };
+  const featSale = withFeat('sale', S.live.filter((l) => l.deal === 'sale' && l.verified));
+  const featRent = withFeat('rent', S.live.filter((l) => l.deal === 'rent'));
+  const ownerImg = (t) => S.live.find((l) => l.type === t && l.img)?.img || S.live.find((l) => l.img)?.img || S.areas[1]?.img || S.areas[0]?.img;
+
   return (
-    <section style={{ paddingTop: 48 }}>
-      <div style={{ maxWidth: 880, margin: '0 auto', textAlign: 'center' }}>
-        <div style={{ fontSize: 12, fontWeight: 600, letterSpacing: '.06em', color: '#767a83', display: 'inline-flex', alignItems: 'center', gap: 8 }}><span style={{ width: 18, height: 1, background: '#c8102e' }} />{S.settings.hero_kicker}<span style={{ width: 18, height: 1, background: '#c8102e' }} /></div>
-        <h1 style={{ fontSize: L.heroFs, fontWeight: 700, lineHeight: 1.15, margin: '16px 0 0', letterSpacing: '-.01em' }}>
-          {starSplit(S.settings.hero_title).map((s, i) => (s.hl ? <span key={i} style={{ color: '#c8102e' }}>{s.t}</span> : <span key={i}>{s.t}</span>))}
-        </h1>
-        <p style={{ fontSize: 17, color: '#5a5e68', margin: '16px auto 0', maxWidth: 640, lineHeight: 1.75 }}>بيوت وأراضي ومساحات تجارية بكل أربيل، للبيع وللإيجار، ويا كل المعلومات واضحة، ومستشار ڤايرو قريب منك بضغطة.</p>
-      </div>
+    <>
+      <style>{HS_STYLE}</style>
 
-      <div style={{ maxWidth: 1080, margin: '32px auto 0' }}>
-        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-          <div style={{ display: 'inline-flex', background: '#f6f6f4', borderRadius: 14, padding: 4, gap: 2 }}>
-            {[['sale', 'شراء'], ['rent', 'إيجار']].map(([v, t]) => (
-              <button key={v} onClick={() => { setDeal(v); setF({ ...f, max: '' }); }} aria-pressed={deal === v} style={{ height: 44, padding: '0 22px', borderRadius: 11, border: 0, background: deal === v ? '#1d1e22' : 'transparent', color: deal === v ? '#fff' : '#1d1e22', fontWeight: 600, fontSize: 15, cursor: 'pointer', whiteSpace: 'nowrap' }}>{t}</button>
-            ))}
+      {/* ---------- hero with unified Buy | Rent search */}
+      <section className="pt-8 lg:pt-14">
+        <div className="wrap">
+          <div className="max-w-[880px] mx-auto text-center">
+            <div className="eyebrow justify-center">{S.settings.hero_kicker}</div>
+            <h1 className="t-hero text-[40px] sm:text-[58px] lg:text-[72px] mt-4">
+              {starSplit(S.settings.hero_title).map((s, i) => (s.hl ? <span key={i} className="accent">{s.t}</span> : <span key={i}>{s.t}</span>))}
+            </h1>
+            <p className="text-[17px] text-ink-600 mt-4 max-w-2xl mx-auto">بيوت وأراضي ومساحات تجارية بكل أربيل، للبيع وللإيجار، ويا كل المعلومات واضحة، ومستشار ڤايرو قريب منك بضغطة.</p>
           </div>
-          <div style={{ display: 'flex', gap: 4, fontSize: 13.5, fontWeight: 600 }}>
-            <Btn kind="ghost" r={999} px={12} className="h-bg" onClick={() => nav('/sell?mode=sale')}>بيع</Btn>
-            <Btn kind="ghost" r={999} px={12} className="h-bg" onClick={() => nav('/sell?mode=rent')}>أجّر عقارك</Btn>
-            <Btn kind="ghost" r={999} px={12} className="h-bg" onClick={() => nav('/invest')}>استثمر</Btn>
+
+          <div className="max-w-[1080px] mx-auto mt-8">
+            <div className="flex items-end justify-between gap-3 flex-wrap">
+              <Seg large value={deal} options={[['sale', 'شراء', 'tag'], ['rent', 'إيجار', 'key']]} onChange={(v) => { setDeal(v); setF({ ...f, max: '' }); }} />
+              <div className="flex items-center gap-1 text-[13.5px]">
+                <Link to="/sell?mode=sale" className="px-3 h-10 inline-flex items-center gap-1.5 rounded-full hover:bg-paper-2 font-semibold"><Icon name="tag" size={15} className="text-ink-400" />بيع</Link>
+                <Link to="/sell?mode=rent" className="px-3 h-10 inline-flex items-center gap-1.5 rounded-full hover:bg-paper-2 font-semibold"><Icon name="key" size={15} className="text-ink-400" />أجّر عقارك</Link>
+                <Link to="/invest" className="px-3 h-10 inline-flex items-center gap-1.5 rounded-full hover:bg-paper-2 font-semibold"><Icon name="trend" size={15} className="text-ink-400" />استثمر</Link>
+              </div>
+            </div>
+            <form onSubmit={(e) => { e.preventDefault(); search(); }} className="mt-3 bg-white rounded-[22px] shadow-pop border hair p-2 grid md:grid-cols-[1.5fr_1fr_1fr_1fr_auto] items-stretch">
+              <label className="hs-f md:border-e hair"><span className="hs-l">وين</span><input className="hs-i" value={f.q} onChange={(e) => setF({ ...f, q: e.target.value })} placeholder={deal === 'rent' ? 'منطقة، مجمع أو معلم' : 'منطقة، مشروع، مطوّر أو رقم'} autoComplete="off" /></label>
+              <label className="hs-f md:border-e hair"><span className="hs-l">النوع</span>
+                <select className="hs-i" value={f.type} onChange={(e) => setF({ ...f, type: e.target.value })}>
+                  <option value="">{deal === 'rent' ? 'أي سكن أو مساحة' : 'أي عقار'}</option>{TYPE_GROUPS.map(([k, t]) => <option key={k} value={k}>{t}</option>)}
+                </select></label>
+              <label className="hs-f md:border-e hair"><span className="hs-l">{deal === 'rent' ? 'الميزانية الشهرية' : 'أعلى سعر'}</span>
+                <select className="hs-i" value={f.max} onChange={(e) => setF({ ...f, max: e.target.value })}>
+                  <option value="">أي</option>{maxOpts.map((v) => <option key={v} value={v}>لحد {S.money(v)}{deal === 'rent' ? ' / شهر' : ''}</option>)}
+                </select></label>
+              <label className="hs-f"><span className="hs-l">{deal === 'rent' ? 'الفرش' : 'الدفع'}</span>
+                {deal === 'rent' ? (
+                  <select className="hs-i" value={f.furn || ''} onChange={(e) => setF({ ...f, furn: e.target.value })}>
+                    <option value="">مفروش أو غير مفروش</option><option value="furnished">مفروش</option><option value="unfurnished">غير مفروش</option>
+                  </select>
+                ) : (
+                  <select className="hs-i" value={f.pay} onChange={(e) => setF({ ...f, pay: e.target.value })}>
+                    <option value="">كاش أو تقسيط</option><option value="cash">كاش</option><option value="installments">تقسيط</option>
+                  </select>
+                )}</label>
+              <button type="submit" className="btn btn-red btn-lg !h-auto min-h-[58px] md:!rounded-[16px] m-1"><Icon name="search" size={19} /><span>ابحث</span></button>
+            </form>
+            <div className="mt-3 flex items-center gap-2 overflow-x-auto no-sb text-[13px] pb-1">
+              {tries.map(([l, to]) => <Link key={to} to={to} className="chip chip-sm flex-none">{l}</Link>)}
+            </div>
           </div>
         </div>
-        <form onSubmit={(e) => { e.preventDefault(); search(); }} style={{ marginTop: 12, background: '#fff', borderRadius: 22, border: '1px solid #e7e7e3', boxShadow: '0 12px 40px rgba(0,0,0,.08)', padding: 8, display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(170px,1fr))', alignItems: 'stretch' }}>
-          <label style={searchLabel}><span style={searchCap}>وين</span><input value={f.q} onChange={(e) => setF({ ...f, q: e.target.value })} placeholder="منطقة، مشروع، مطوّر أو رقم" style={{ ...searchSel, width: '100%' }} /></label>
-          <label style={searchLabel}><span style={searchCap}>النوع</span>
-            <select className="sel" value={f.type} onChange={(e) => setF({ ...f, type: e.target.value })} style={{ ...searchSel, backgroundPosition: 'left 0 center' }}>
-              <option value="">أي عقار</option>{TYPE_GROUPS.map(([k, t]) => <option key={k} value={k}>{t}</option>)}
-            </select></label>
-          <label style={searchLabel}><span style={searchCap}>أعلى سعر</span>
-            <select className="sel" value={f.max} onChange={(e) => setF({ ...f, max: e.target.value })} style={{ ...searchSel, backgroundPosition: 'left 0 center' }}>
-              <option value="">أي</option>{maxOpts.map((v) => <option key={v} value={v}>{S.money(v)}{deal === 'rent' ? ' / شهر' : ''}</option>)}
-            </select></label>
-          <label style={{ ...searchLabel, borderInlineEnd: 0 }}><span style={searchCap}>{deal === 'rent' ? 'الفرش' : 'الدفع'}</span>
-            {deal === 'rent' ? (
-              <select className="sel" value={f.furn || ''} onChange={(e) => setF({ ...f, furn: e.target.value })} style={{ ...searchSel, backgroundPosition: 'left 0 center' }}>
-                <option value="">مفروش أو غير مفروش</option><option value="furnished">مفروش</option><option value="unfurnished">غير مفروش</option>
-              </select>
-            ) : (
-              <select className="sel" value={f.pay} onChange={(e) => setF({ ...f, pay: e.target.value })} style={{ ...searchSel, backgroundPosition: 'left 0 center' }}>
-                <option value="">كاش أو تقسيط</option><option value="cash">كاش</option><option value="installments">تقسيط</option>
-              </select>
-            )}</label>
-          <button type="submit" style={{ minHeight: 58, margin: 4, borderRadius: 16, border: 0, background: '#c8102e', color: '#fff', fontWeight: 600, fontSize: 16, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, whiteSpace: 'nowrap' }}><IconSearch />ابحث</button>
-        </form>
-      </div>
-
-      <div style={{ marginTop: 40, position: 'relative', borderRadius: 24, overflow: 'hidden', height: L.bannerH, background: '#f6f6f4' }}>
-        <img src="https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=2000&q=70" alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top,rgba(0,0,0,.45),transparent 60%)' }} />
-        <div style={{ position: 'absolute', bottom: 18, insetInline: 18, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 12, color: '#fff', flexWrap: 'wrap' }}>
-          <div><div style={{ fontSize: 13, opacity: 0.85 }}>أربيل، إقليم كوردستان</div><div style={{ fontSize: 22, fontWeight: 600, marginTop: 2 }}>سكن وأراضي ومساحات تجارية — للبيع وللإيجار</div></div>
-          <span style={{ fontSize: 11, opacity: 0.75, fontFamily: 'ui-monospace,monospace' }} dir="ltr">36.19°N · 44.01°E</span>
+        <div className="wrap mt-10">
+          <div className="relative rounded-[24px] overflow-hidden h-[220px] sm:h-[320px] lg:h-[380px]">
+            <Img src="https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=2000&q=70" className="absolute inset-0 w-full h-full !rounded-none" imgClass="absolute inset-0 w-full h-full object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/35 to-transparent" />
+            <div className="absolute bottom-4 start-4 end-4 flex flex-wrap items-end justify-between gap-3 text-white">
+              <div><div className="text-[13px] opacity-85">أربيل، إقليم كوردستان</div><div className="text-[20px] sm:text-[24px] font-semibold t-h3">سكن وأراضي ومساحات تجارية — للبيع وللإيجار</div></div>
+              <span className="mono text-[11px] opacity-75 hidden sm:inline" dir="ltr">36.19°N · 44.01°E</span>
+            </div>
+          </div>
         </div>
-      </div>
+      </section>
 
+      {/* ---------- category shortcuts */}
       {sec.types && (
-        <div style={{ marginTop: 56 }}>
-          <SectionHead kicker="ابدأ من النوع" title="شنو تدوّر عليه؟" h2Fs={L.h2Fs} />
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(150px,1fr))', gap: 10 }}>
+        <section className="sec !pb-10"><div className="wrap">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-5 mb-7"><div><div className="eyebrow mb-3">ابدأ من النوع</div><h2 className="t-h2 text-[28px] sm:text-[36px]">شنو تدوّر عليه؟</h2></div></div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
             {cats.map((c) => (
-              <button key={c.k} className="h-shadow" style={catBtn} onClick={() => nav(c.to)}>
-                <CatIcon k={c.k} />
-                <div><div style={{ fontWeight: 600, fontSize: 15 }}>{c.label}</div><div style={{ fontSize: 12.5, color: '#767a83' }}>{c.n}</div></div>
-              </button>
+              <Link key={c.k} to={c.to} className="group flex flex-col items-start gap-6 p-4 rounded-[18px] border hair hover:border-ink-300 hover:shadow-card transition-all bg-white min-w-0">
+                <span className="mi-ic group-hover:bg-red-50 group-hover:text-red transition-colors"><Icon name={CAT_ICON[c.k]} size={20} /></span>
+                <span><span className="block font-semibold text-[15px]">{c.label}</span><span className="lbl num">{c.n}</span></span>
+              </Link>
             ))}
           </div>
-        </div>
+        </div></section>
       )}
 
-      {sec.featured && S.featured.length > 0 && (
-        <div style={{ marginTop: 56 }}>
-          <SectionHead kicker="مختارات" title="عقارات مميزة هذا الأسبوع" h2Fs={L.h2Fs} action={<Btn onClick={() => nav('/buy')}>كل العقارات ←</Btn>} />
-          <CardGrid list={S.featured} min={260} />
+      {/* ---------- explore by budget (reference: budget()) */}
+      <section className="sec !pt-6"><div className="wrap"><div className="panel-s p-5 sm:p-8 lg:p-10">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-5 mb-7">
+          <div><div className="eyebrow mb-3">حسب ميزانيتك</div><h2 className="t-h2 text-[26px] sm:text-[34px]">{bm === 'rent' ? 'شنو أگدر أستأجر بـ 700 دولار بالشهر؟' : 'شنو تشتري بـ 100 ألف دولار؟'}</h2></div>
+          <Seg className="!bg-white" value={bm} options={[['sale', 'ميزانية الشراء'], ['rent', 'إيجار شهري']]} onChange={setBm} />
         </div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {bands.map((b) => (
+            <Link key={b.i} to={b.to} className="group p-5 rounded-[18px] bg-white border hair hover:border-ink-300 hover:shadow-card transition-all flex flex-col min-h-[170px]">
+              <span className="lbl">{['01', '02', '03', '04'][b.i]}</span>
+              <span className="text-[22px] font-semibold num mt-1">{b.label}</span>
+              <span className="text-[13px] text-ink-600 mt-1 clamp-2">{b.types || '—'}</span>
+              <span className="mt-auto pt-4 flex items-center justify-between text-[13.5px] font-semibold"><span className="num">{b.n} {bm === 'rent' ? 'إيجار' : 'عقار'}</span><Icon name="arrow" size={16} className="flip-rtl text-ink-400 group-hover:text-red" /></span>
+            </Link>
+          ))}
+        </div>
+        <div className="mt-6 flex flex-wrap gap-2">
+          {bm === 'rent'
+            ? <><Link to="/tools/rent" className="btn btn-ink btn-sm"><Icon name="key" size={16} />افتح مختبر الإيجار</Link><Link to="/tools/budget" className="btn btn-line btn-sm"><Icon name="wallet" size={16} />مستكشف ميزانية الإيجار</Link></>
+            : <><Link to="/tools/budget" className="btn btn-ink btn-sm"><Icon name="wallet" size={16} />افتح مستكشف الميزانية</Link><Link to="/tools/payment" className="btn btn-line btn-sm"><Icon name="chart" size={16} />مختبر الدفع</Link></>}
+        </div>
+      </div></div></section>
+
+      {/* ---------- featured sale & rent rails (reference: featured()) */}
+      {sec.featured && (
+        <section className="sec border-t hair"><div className="wrap">
+          <Rail title="مختارات للبيع" sub="شقق وبيوت وفلل وأراضي ومحلات، ڤايرو متحقق منها." list={featSale} link="/buy" linkLabel="كل العقارات للبيع" empty="ماكو عقارات للبيع منشورة هسه — أول ما تنشر، تظهر هنا." />
+          <Rail title="مختارات للإيجار" sub="موعد السكن والفرش والتأمين واضحين من البداية." list={featRent} link="/rent" linkLabel="كل الإيجارات" empty="ماكو إيجارات منشورة هسه — أول ما تنشر، تظهر هنا." />
+        </div></section>
       )}
 
+      {/* ---------- neighbourhoods + map */}
       {sec.areas && (
-        <div style={{ marginTop: 56, display: 'grid', gridTemplateColumns: L.cols2, gap: 24, alignItems: 'stretch' }}>
-          <div>
-            <div style={{ fontSize: 12, fontWeight: 600, letterSpacing: '.06em', color: '#767a83' }}>اكتشف أربيل</div>
-            <h2 style={{ fontSize: L.h2Fs, fontWeight: 600, margin: '6px 0 20px' }}>وين تريد تسكن؟</h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(150px,1fr))', gap: 12 }}>
-              {S.homeAreas.map((a) => (
-                <button key={a.id} onClick={() => nav(a.href)} style={{ position: 'relative', aspectRatio: '1', borderRadius: 18, overflow: 'hidden', border: 0, padding: 0, cursor: 'pointer', textAlign: 'start', background: '#f6f6f4' }}>
-                  {a.img && <img src={a.img} alt="" loading="lazy" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />}
-                  <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top,rgba(0,0,0,.6),transparent 55%)' }} />
-                  <div style={{ position: 'absolute', bottom: 12, insetInline: 14, color: '#fff' }}><div style={{ fontWeight: 600, fontSize: 16 }}>{a.short}</div><div style={{ fontSize: 12, opacity: 0.85 }}>{a.total} عقار · {a.ppmText}/م²</div></div>
-                </button>
+        <section className="sec surface"><div className="wrap">
+          <SectionHead kicker="اكتشف أربيل" title="اختار المنطقة أول." sub="كل منطقة تبيّن شگد يكلف الشراء والإيجار بيها، وشلون العيشة، وشنو قريب منها." link={{ to: '/areas', label: 'كل المناطق' }} />
+          <div className="grid lg:grid-cols-12 gap-5">
+            <div className="lg:col-span-5 flex flex-col gap-2 overflow-y-auto no-sb pe-1" style={{ maxHeight: 640 }}>
+              {[...S.homeAreas, ...S.areas.filter((a) => !S.homeAreas.includes(a))].map((a) => (
+                <Link key={a.id} to={a.href} className="group flex items-center gap-4 p-3 rounded-[16px] bg-white border hair hover:border-ink-300 transition-colors">
+                  <Img src={a.img} className="w-16 h-16 rounded-[12px] flex-none" imgClass="absolute inset-0 w-full h-full object-cover" />
+                  <div className="min-w-0 flex-1"><div className="font-semibold group-hover:text-red transition-colors">{a.name}</div><div className="lbl clamp-1">{a.vibe || `${a.ppmText}/م²`}</div></div>
+                  <div className="text-end text-[12.5px] leading-tight flex-none"><div><span className="text-ink-400">شراء</span> <b className="num">{a.saleCount}</b></div><div className="mt-1"><span className="text-ink-400">إيجار</span> <b className="num">{a.rentCount}</b></div></div>
+                </Link>
               ))}
             </div>
-            <Btn style={{ marginTop: 14 }} onClick={() => nav('/areas')}>كل المناطق ←</Btn>
+            <div className="lg:col-span-7">
+              <MapExplorer embedded height={520} />
+              <div className="flex flex-wrap gap-2 mt-3"><Link to="/map" className="btn btn-ink btn-sm"><Icon name="map" size={16} />افتح خريطة العقارات</Link><Link to="/areas" className="btn btn-line btn-sm"><Icon name="compare" size={16} />قارن المناطق</Link></div>
+            </div>
           </div>
-          <MapView height="100%" style={{ minHeight: 360, borderRadius: 24, overflow: 'hidden', border: '1px solid #e7e7e3' }} interactive={false} bounds={S.areas.map((a) => a.pos)} zoom={12} markers={S.areas.map((a) => ({ id: a.id, kind: 'area', lat: a.pos.lat, lng: a.pos.lng, html: `${esc(a.short)} <b>${a.total}</b>`, interactive: false }))}>
-            <button onClick={() => nav('/map')} aria-label="افتح الخريطة" style={{ position: 'absolute', inset: 0, zIndex: 900, background: 'transparent', border: 0, cursor: 'pointer', padding: 0 }} />
-            <span style={{ position: 'absolute', bottom: 16, insetInlineEnd: 16, zIndex: 901, pointerEvents: 'none', height: 40, padding: '0 16px', borderRadius: 12, background: '#1d1e22', color: '#fff', fontWeight: 600, fontSize: 13.5, display: 'inline-flex', alignItems: 'center', whiteSpace: 'nowrap' }}>افتح الخريطة</span>
-          </MapView>
-        </div>
+        </div></section>
       )}
 
+      {/* ---------- decision tools */}
       {sec.tools && (
-        <div style={{ marginTop: 56 }}>
-          <SectionHead kicker="الأدوات" title="قرّر وأنت فاهم" h2Fs={L.h2Fs} action={<Btn onClick={() => nav('/tools')}>كل الأدوات ←</Btn>} />
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(230px,1fr))', gap: 12 }}>
-            {[['/tools/match', 'ڤايرو ماتش', 'شراء أو إيجار أو استثمار — ونرتبلك الأنسب'], ['/tools/budget', 'مستكشف الميزانية', 'شنو أگدر أشتري أو أأجر؟'], ['/tools/rent', 'مختبر الإيجار', 'قدرتك على الإيجار وتكلفة السكن'], ['/tools/payment', 'مختبر الدفع', 'خطط شراءك بالتقسيط'], ['/compare', 'المقارنة', 'جنب بعض، نفس النوع ويا نفس النوع'], ['/tools/tour', 'الجولة الذكية', 'نظّم يوم المعاينات'], ['/tools/tower', 'مستكشف البرج', 'اختار الطابق والوحدة بالشكل'], ['/tools/atlas', 'أطلس العقار', 'أسعار المتر حسب المنطقة']].map(([to, t, d]) => (
-              <button key={to} className="h-shadow" style={toolBtn} onClick={() => nav(to)}><div style={{ fontWeight: 600, fontSize: 16 }}>{t}</div><div style={{ fontSize: 13, color: '#767a83', marginTop: 4 }}>{d}</div></button>
+        <section className="sec surface"><div className="wrap">
+          <SectionHead kicker="الأدوات" title="قرّر وأنت فاهم" sub="أدوات للمشتري والمستأجر والمستثمر." link={{ to: '/tools', label: 'كل الأدوات' }} />
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {TOOLS.map(([to, ic, t, d, c]) => (
+              <Link key={to} to={to} className="group p-5 rounded-[18px] bg-white border hair hover:shadow-card transition-shadow flex flex-col min-h-[200px]">
+                <span className="mi-ic group-hover:bg-red-50 group-hover:text-red transition-colors"><Icon name={ic} size={20} /></span>
+                <span className="font-semibold text-[16px] mt-5">{t}</span>
+                <span className="text-[13.5px] text-ink-600 mt-1">{d}</span>
+                <span className="mt-auto pt-4 link text-[13.5px]">{c}<Icon name="arrow" size={14} className="flip-rtl" /></span>
+              </Link>
             ))}
           </div>
-        </div>
+        </div></section>
       )}
 
+      {/* ---------- owners: sell & rent out */}
       {sec.owners && (
-        <div style={{ marginTop: 56, display: 'grid', gridTemplateColumns: L.cols2, gap: 16 }}>
-          <CtaCard bg="#1d1e22" kicker="لأصحاب العقارات" title="بيع عقارك أو أجّره ويا فريق يعرف السوق" btn="استشارة مجانية" fs={L.ctaFs} onClick={() => nav('/sell')} op={0.7} />
-          <CtaCard bg="#c8102e" kicker="ڤايرو للاستثمار" title="سيناريوهات، مو وعود." btn="قريباً" fs={L.ctaFs} onClick={() => nav('/invest')} op={0.8} />
-        </div>
+        <section className="sec"><div className="wrap">
+          <SectionHead kicker="لأصحاب العقارات" title="بيع عقارك أو أجّره ويا فريق يعرف السوق" sub="سجّل عقارك ببضع دقايق. مستشار ڤايرو يراجعه ويزوره ويسوّقه للمشترين أو المستأجرين الجادّين." />
+          <div className="grid md:grid-cols-2 gap-4">
+            {[
+              ['tag', 'بيع عقارك', 'شقق، بيوت، فلل، أراضي وعقارات تجارية.', ['گلّنا عن العقار', 'ڤايرو يراجع ويزور', 'نصيحة بالسعر وتسويق', 'مشترين جادّين وتفاوض'], 'house',
+                <><Link to="/sell?mode=sale" className="btn btn-red">بيع عقارك<Icon name="arrow" size={16} className="flip-rtl" /></Link><Link to="/sell" className="btn btn-line"><Icon name="users" size={16} />استشارة مجانية</Link></>],
+              ['key', 'أجّر عقارك', 'بيوت، شقق مفروشة، مكاتب، محلات ومخازن.', ['التفاصيل والإيجار وموعد التوفر', 'ڤايرو يفحص العقار', 'العرض والصور والمعاينات', 'تدقيق المستأجر والتسليم'], 'apartment',
+                <><Link to="/sell?mode=rent" className="btn btn-red">أجّر عقارك<Icon name="arrow" size={16} className="flip-rtl" /></Link><Link to="/invest" className="btn btn-line" title="ڤايرو للاستثمار"><Icon name="trend" size={16} />ڤايرو للاستثمار · قريباً</Link></>],
+            ].map(([ic, t, s, steps, imgType, ctas]) => (
+              <div key={t} className="panel overflow-hidden grid sm:grid-cols-[1fr_200px] lg:grid-cols-[1fr_240px]">
+                <div className="p-6 sm:p-8 flex flex-col">
+                  <span className="mi-ic"><Icon name={ic} size={20} /></span>
+                  <h3 className="t-h2 text-[26px] mt-5">{t}</h3>
+                  <p className="text-ink-600 mt-1">{s}</p>
+                  <ol className="mt-5 space-y-2.5">{steps.map((x, i) => <li key={i} className="flex items-center gap-3 text-[14px]"><span className="w-6 h-6 rounded-full bg-paper-2 text-[12px] font-semibold inline-flex items-center justify-center num flex-none">{i + 1}</span>{x}</li>)}</ol>
+                  <div className="mt-7 flex flex-wrap gap-2">{ctas}</div>
+                </div>
+                <Img src={ownerImg(imgType)} className="hidden sm:block h-full !rounded-none" imgClass="absolute inset-0 w-full h-full object-cover" />
+              </div>
+            ))}
+          </div>
+        </div></section>
       )}
-    </section>
+    </>
   );
 }
 
-function CatIcon({ k }) {
-  if (k === 'installments') return <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#1d1e22" strokeWidth="1.6" strokeLinecap="round"><path d="M19 5L5 19" /><circle cx="7" cy="7" r="2.5" /><circle cx="17" cy="17" r="2.5" /></svg>;
-  if (k === 'ready') return <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#1d1e22" strokeWidth="1.6" strokeLinejoin="round"><circle cx="8" cy="15" r="4" /><path d="M11 12l9-9M16 4l3 3M13 7l3 3" /></svg>;
-  return <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#1d1e22" strokeWidth="1.6" strokeLinejoin="round"><path d={CAT_ICONS[k]} /></svg>;
-}
-
-function CtaCard({ bg, kicker, title, btn, fs, onClick, op }) {
+// Horizontal card rail with prev/next buttons (reference: rail()).
+function Rail({ title, sub, list, link, linkLabel, empty }) {
+  const box = useRef(null);
+  const scroll = (dir) => { const el = box.current; if (el) el.scrollBy({ left: dir * -1 * el.clientWidth * 0.8, behavior: 'smooth' }); };
   return (
-    <button onClick={onClick} style={{ textAlign: 'start', padding: 32, borderRadius: 24, border: 0, background: bg, color: '#fff', cursor: 'pointer', minHeight: 220, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 16 }}>
-      <div><div style={{ fontSize: 12, fontWeight: 600, letterSpacing: '.06em', opacity: op }}>{kicker}</div><div style={{ fontSize: fs, fontWeight: 600, marginTop: 8, lineHeight: 1.3 }}>{title}</div></div>
-      <span style={{ height: 44, padding: '0 18px', borderRadius: 12, background: '#fff', color: '#1d1e22', fontWeight: 600, fontSize: 14, display: 'inline-flex', alignItems: 'center', alignSelf: 'flex-start' }}>{btn}</span>
-    </button>
+    <div className="mb-14 last:mb-0">
+      <div className="flex items-end justify-between gap-4 mb-5">
+        <div><h3 className="t-h2 text-[24px] sm:text-[30px]">{title}</h3><p className="text-ink-600 mt-1">{sub}</p></div>
+        <div className="flex items-center gap-2">
+          <Link to={link} className="link text-[14px] hidden sm:inline-flex">{linkLabel}<Icon name="arrow" size={15} className="flip-rtl" /></Link>
+          <button type="button" className="icon-btn border hair hidden md:inline-flex" aria-label="السابق" onClick={() => scroll(-1)}><Icon name="chev-l" size={18} className="flip-rtl" /></button>
+          <button type="button" className="icon-btn border hair hidden md:inline-flex" aria-label="التالي" onClick={() => scroll(1)}><Icon name="chev" size={18} className="flip-rtl" /></button>
+        </div>
+      </div>
+      <div ref={box} className="flex gap-5 overflow-x-auto no-sb snap-x-m -mx-4 px-4 md:mx-0 md:px-0 pb-2">
+        {list.map((l) => <div key={l.id} className="w-[78%] sm:w-[44%] lg:w-[calc(25%-15px)] flex-none"><ListingCard l={l} /></div>)}
+        {list.length === 0 && (
+          <div className="w-full panel-s p-8 sm:p-12 text-center flex-none">
+            <div className="w-12 h-12 mx-auto rounded-full bg-white inline-flex items-center justify-center text-ink-400"><Icon name="search" size={22} /></div>
+            <div className="font-semibold mt-3">{empty}</div>
+          </div>
+        )}
+      </div>
+      <Link to={link} className="link text-[14px] sm:hidden mt-3">{linkLabel}<Icon name="arrow" size={15} className="flip-rtl" /></Link>
+    </div>
   );
 }
-

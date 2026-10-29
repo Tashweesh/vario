@@ -3,7 +3,7 @@ import { groupTypes } from '../lib/format.js';
 // Search/filter state lives in the URL (?type=&area=&min=&max=&beds=&pay=&furn=&q=&sort=).
 export function readFilters(sp) {
   const g = (k) => sp.get(k) || '';
-  return { q: g('q'), type: g('type'), area: g('area'), min: g('min'), max: g('max'), beds: g('beds'), pay: g('pay'), furn: g('furn'), sort: g('sort') || 'new' };
+  return { q: g('q'), type: g('type'), area: g('area'), min: g('min'), max: g('max'), beds: g('beds'), pay: g('pay'), furn: g('furn'), sort: g('sort') || 'new', avail: g('avail') };
 }
 
 export function applyFilters(list, f, deal) {
@@ -11,6 +11,7 @@ export function applyFilters(list, f, deal) {
   const words = f.q.trim().toLowerCase().split(/\s+/).filter(Boolean);
   let out = list.filter((l) => {
     if (deal && l.deal !== deal) return false;
+    if (f.avail && l.status !== 'live') return false; // available only: not reserved, not sold / rented
     if (types && !types.includes(l.type)) return false;
     if (f.area && l.area_id !== f.area) return false;
     if (f.min && l.amount < +f.min) return false;
@@ -34,4 +35,4 @@ export function applyFilters(list, f, deal) {
   return out;
 }
 
-export const activeCount = (f) => ['type', 'area', 'min', 'max', 'beds', 'pay', 'furn', 'q'].filter((k) => f[k]).length;
+export const activeCount = (f) => ['type', 'area', 'min', 'max', 'beds', 'pay', 'furn', 'q', 'avail'].filter((k) => f[k]).length;

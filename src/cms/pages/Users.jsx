@@ -4,11 +4,12 @@ import { useAuth } from '../../lib/auth.jsx';
 import { supabase, q, uploadMedia } from '../../lib/supabase.js';
 import { useDocTitle } from '../../lib/hooks.js';
 import { ROLE_AR } from '../../lib/format.js';
-import { Btn, Card, Field, Modal, Toggle, useToast } from '../../components/ui.jsx';
-import { PageTitle, ScrollX, TABLE, editBtn, thead, trow } from '../../staff/Shell.jsx';
+import { Btn, Field, Icon, Modal, Toggle, useToast } from '../../components/ui.jsx';
+import { Av, Osb, OsCard, OsTable, PageTitle, SwRow } from '../../staff/Shell.jsx';
 
-const COLS = '40px minmax(160px,1.4fr) 1fr 140px 90px 90px 70px';
+const F = 'field !h-10 !text-[13.5px]';
 
+// Ported from the reference's staff directory (os/people.js): directory table + roles card + invite sheet.
 export default function Users() {
   useDocTitle('المستخدمون والصلاحيات');
   const C = useCms();
@@ -19,42 +20,42 @@ export default function Users() {
   const setRole = async (agentId, role) => {
     try { await q(supabase.from('staff').update({ role }).eq('agent_id', agentId)); await C.reload(); toast('تم تغيير الدور'); if (agentId === A.me.agent_id) A.refreshMe(); } catch (e) { toast(e.message, 'error'); }
   };
+  const active = C.agents.filter((g) => g.active).length;
   return (
     <>
-      <PageTitle action={<Btn onClick={() => setEdit({})}>+ دعوة مستخدم</Btn>}>المستخدمون والصلاحيات</PageTitle>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(min(100%,320px),1fr))', gap: 16, alignItems: 'start' }}>
-        <div style={{ ...TABLE, gridColumn: 'span 2' }}><ScrollX min={780}>
-          <div style={thead(COLS)}><span /><span>الاسم</span><span>الهاتف</span><span>الدور</span><span>عقارات</span><span>عملاء</span><span /></div>
-          {C.agents.map((g) => {
-            const s = staff[g.id];
-            return (
-              <div key={g.id} className="h-row" style={{ ...trow(COLS), opacity: g.active ? 1 : 0.5 }}>
-                {g.img ? <img src={g.img} alt="" style={{ width: 36, height: 36, borderRadius: 999, objectFit: 'cover' }} /> : <span style={{ width: 36, height: 36, borderRadius: 999, background: '#1d1e22', color: '#fff', display: 'grid', placeItems: 'center', fontWeight: 700 }}>{g.name[0]}</span>}
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ fontWeight: 600 }}>{g.name}{!g.active && ' · موقوف'}</div>
-                  <div style={{ fontSize: 12, color: '#767a83', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{g.title}{s ? (s.user_id ? '' : ' · بانتظار التفعيل') : ' · بدون حساب'}</div>
-                </div>
-                <span dir="ltr" style={{ textAlign: 'right' }}>{g.phone}</span>
-                {s ? (
-                  <select className="sel" aria-label="الدور" value={s.role} onChange={(e) => setRole(g.id, e.target.value)} style={{ height: 34, border: '1px solid #d8d8d3', borderRadius: 8, padding: '0 10px', fontSize: 13, background: '#fff', outline: 0 }}>
-                    {Object.entries(ROLE_AR).map(([k, t]) => <option key={k} value={k}>{t}</option>)}
-                  </select>
-                ) : <span style={{ fontSize: 12.5, color: '#767a83' }}>—</span>}
-                <span>{C.listings.filter((l) => l.agent_id === g.id).length}</span>
-                <span>{C.contacts.filter((c) => c.agent_id === g.id).length}</span>
-                <button style={editBtn} onClick={() => setEdit({ ...g, staff: s })}>تعديل</button>
-              </div>
-            );
-          })}
-        </ScrollX></div>
-        <Card pad={18}><div style={{ fontWeight: 600, marginBottom: 12 }}>الأدوار</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, fontSize: 13 }}>
-            <div><div style={{ fontWeight: 600 }}>مدير النظام</div><div style={{ color: '#767a83', lineHeight: 1.6 }}>كل شي، بما فيه المستخدمون والصفحة الرئيسية</div></div>
-            <div><div style={{ fontWeight: 600 }}>محرر محتوى</div><div style={{ color: '#767a83', lineHeight: 1.6 }}>إنشاء وتعديل ونشر العقارات والمشاريع والمناطق</div></div>
-            <div><div style={{ fontWeight: 600 }}>وسيط</div><div style={{ color: '#767a83', lineHeight: 1.6 }}>تعديل عقاراته فقط، حفظ كمسودة بدون نشر، وصول كامل للـ CRM</div></div>
-            <div style={{ paddingTop: 10, borderTop: '1px solid #e7e7e3', color: '#767a83', lineHeight: 1.6 }}>بعد الدعوة، المستخدم يفتح <b dir="ltr">/login</b> ويختار «فعّل حسابك» بنفس البريد.</div>
-          </div>
-        </Card>
+      <PageTitle sub={`${active} فعّال · ${C.agents.length - active} موقوف · ${C.staff.filter((s) => !s.user_id).length} بانتظار التفعيل`} action={<Btn kind="red" size="sm" onClick={() => setEdit({})}><Icon name="plus" size={15} />دعوة مستخدم</Btn>}>المستخدمون والصلاحيات</PageTitle>
+      <div className="os-cols">
+        <div className="min-w-0">
+          <OsTable head={['الاسم', 'الهاتف', 'الدور', { label: 'عقارات', cls: 'num' }, { label: 'عملاء', cls: 'num' }, '']}>
+            {C.agents.map((g) => {
+              const s = staff[g.id];
+              return (
+                <tr key={g.id} style={{ opacity: g.active ? 1 : 0.5 }}>
+                  <td><span className="inline-flex items-center gap-2.5 min-w-[200px]"><Av src={g.img} name={g.name} size={32} /><span className="min-w-0"><span className="flex items-center gap-1.5 text-[13px] font-semibold"><span className="clamp-1">{g.name}</span>{!g.active && <Osb tone="gray">موقوف</Osb>}{s && !s.user_id && <Osb tone="amber">بانتظار التفعيل</Osb>}</span><span className="block text-[11.5px] text-ink-500 clamp-1">{g.title || '—'}{s ? '' : ' · بدون حساب'}</span></span></span></td>
+                  <td><span className="mono text-[12.5px]" dir="ltr">{g.phone || '—'}</span></td>
+                  <td>{s ? (
+                    <select className="field !h-8 !text-[12px] !font-semibold !rounded-[8px] !w-auto !ps-2.5 !pe-7" aria-label="الدور" value={s.role} onChange={(e) => setRole(g.id, e.target.value)}>
+                      {Object.entries(ROLE_AR).map(([k, t]) => <option key={k} value={k}>{t}</option>)}
+                    </select>
+                  ) : <span className="text-[12.5px] text-ink-400">—</span>}</td>
+                  <td className="num">{C.listings.filter((l) => l.agent_id === g.id).length}</td>
+                  <td className="num">{C.contacts.filter((c) => c.agent_id === g.id).length}</td>
+                  <td className="text-end"><button type="button" className="btn btn-line btn-sm !h-8" onClick={() => setEdit({ ...g, staff: s })}>تعديل</button></td>
+                </tr>
+              );
+            })}
+          </OsTable>
+        </div>
+        <aside className="os-aside grid gap-5 min-w-0">
+          <OsCard title="الأدوار" sub="شنو يگدر يسوي كل دور">
+            <div className="grid gap-3 text-[13px]">
+              {[['admin', 'كل شي، بما فيه المستخدمون والصفحة الرئيسية', 'ink'], ['editor', 'إنشاء وتعديل ونشر العقارات والمشاريع والمناطق', 'green'], ['agent', 'تعديل عقاراته فقط، حفظ كمسودة بدون نشر، وصول كامل للـ CRM', 'amber']].map(([k, d, tone]) => (
+                <div key={k} className="flex items-start gap-2.5"><Osb tone={tone} className="flex-none mt-0.5">{ROLE_AR[k]}</Osb><span className="text-ink-600 leading-relaxed">{d}</span></div>
+              ))}
+              <div className="pt-3 border-t hair text-ink-500 leading-relaxed">بعد الدعوة، المستخدم يفتح <b dir="ltr" className="mono">/login</b> ويختار «فعّل حسابك» بنفس البريد.</div>
+            </div>
+          </OsCard>
+        </aside>
       </div>
       {edit && <UserModal u={edit} onClose={() => setEdit(null)} />}
     </>
@@ -96,26 +97,25 @@ function UserModal({ u, onClose }) {
     try { const up = await uploadMedia(file, 'team'); setF((s) => ({ ...s, img: up.url })); } catch (err) { toast(err.message, 'error'); }
   };
   return (
-    <Modal title={isNew ? 'دعوة مستخدم' : `تعديل ${u.name}`} onClose={onClose} width={560}>
-      <form onSubmit={save} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-        <Field label="الاسم"><input className="inp-sm" required value={f.name} onChange={set('name')} /></Field>
-        <Field label="المسمّى"><input className="inp-sm" value={f.title} onChange={set('title')} placeholder="مستشار مبيعات" /></Field>
-        <Field label="البريد (لتسجيل الدخول)"><input className="inp-sm" type="email" dir="ltr" required={isNew} value={f.email} onChange={set('email')} /></Field>
-        <Field label="الهاتف"><input className="inp-sm" dir="ltr" value={f.phone} onChange={set('phone')} /></Field>
-        <Field label="الدور"><select className="inp-sm sel" value={f.role} onChange={set('role')}>{Object.entries(ROLE_AR).map(([k, t]) => <option key={k} value={k}>{t}</option>)}</select></Field>
+    <Modal title={isNew ? 'دعوة مستخدم' : `تعديل ${u.name}`} sub={isNew ? 'يستلم الدعوة على بريده ويفعّل حسابه من صفحة الدخول' : u.staff?.email} onClose={onClose} width={560}>
+      <form onSubmit={save} className="grid sm:grid-cols-2 gap-4">
+        <Field label="الاسم"><input className={F} required value={f.name} onChange={set('name')} /></Field>
+        <Field label="المسمّى"><input className={F} value={f.title} onChange={set('title')} placeholder="مستشار مبيعات" /></Field>
+        <Field label="البريد (لتسجيل الدخول)"><input className={`${F} mono`} type="email" dir="ltr" required={isNew} value={f.email} onChange={set('email')} /></Field>
+        <Field label="الهاتف"><input className={`${F} mono`} dir="ltr" value={f.phone} onChange={set('phone')} /></Field>
+        <Field label="الدور"><select className={F} value={f.role} onChange={set('role')}>{Object.entries(ROLE_AR).map(([k, t]) => <option key={k} value={k}>{t}</option>)}</select></Field>
         <Field label="الصورة">
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            {f.img && <img src={f.img} alt="" style={{ width: 40, height: 40, borderRadius: 999, objectFit: 'cover' }} />}
-            <label style={{ height: 40, padding: '0 12px', borderRadius: 10, border: '1px solid #d8d8d3', display: 'grid', placeItems: 'center', cursor: 'pointer', color: '#1d1e22' }}>رفع صورة<input type="file" accept="image/jpeg,image/png,image/webp" style={{ display: 'none' }} onChange={(e) => upload(e.target.files?.[0])} /></label>
+          <div className="flex items-center gap-2.5">
+            <Av src={f.img} name={f.name} size={40} />
+            <span className="btn btn-line btn-sm cursor-pointer" role="button"><Icon name="upload" size={15} />رفع صورة<input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={(e) => upload(e.target.files?.[0])} /></span>
           </div>
         </Field>
         {!isNew && (
-          <div style={{ gridColumn: '1/-1', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderTop: '1px solid #e7e7e3' }}>
-            <div><div style={{ fontWeight: 600, fontSize: 14, color: '#1d1e22' }}>الحساب مفعّل</div><div style={{ fontSize: 12.5, color: '#767a83' }}>الإيقاف يمنع الدخول ويخفيه من الموقع، وتبقى عقاراته وعملاؤه</div></div>
+          <SwRow className="sm:col-span-2 border-t hair pt-3" label="الحساب مفعّل" sub="الإيقاف يمنع الدخول ويخفيه من الموقع، وتبقى عقاراته وعملاؤه">
             <Toggle on={f.active} label="الحساب مفعّل" onChange={set('active')} disabled={u.id === A.me.agent_id} />
-          </div>
+          </SwRow>
         )}
-        <div style={{ gridColumn: '1/-1', display: 'flex', justifyContent: 'flex-end' }}><Btn type="submit" kind="red" disabled={busy}>{isNew ? 'إرسال الدعوة' : 'حفظ'}</Btn></div>
+        <div className="sm:col-span-2 flex justify-end pt-3 border-t hair"><Btn type="submit" kind="red" size="sm" disabled={busy}><Icon name={isNew ? 'mail' : 'check'} size={15} />{isNew ? 'إرسال الدعوة' : 'حفظ'}</Btn></div>
       </form>
     </Modal>
   );

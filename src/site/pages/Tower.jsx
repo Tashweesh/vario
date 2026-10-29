@@ -1,17 +1,21 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useSite } from '../SiteData.jsx';
 import { supabase } from '../../lib/supabase.js';
-import { useDocTitle, useLayout } from '../../lib/hooks.js';
-import { Btn, Chip, Spinner } from '../../components/ui.jsx';
-import { LeadModal, PageHead } from '../parts.jsx';
+import { useDocTitle } from '../../lib/hooks.js';
+import { Btn, Chip, Icon, Spinner } from '../../components/ui.jsx';
+import { Crumbs, LeadModal, PageHead } from '../parts.jsx';
 
-const ST = { free: ['#fff', '#1d1e22', 'متاح'], reserved: ['#f5c6cf', '#1d1e22', 'محجوز'], sold: ['#1d1e22', '#fff', 'مباع'] };
+// Ported from the design reference: pages/tower.js (Tower Explorer). Unit data and selection logic are the app's.
+
+// status → [background, text colour, label, border]
+const ST = { free: ['#fff', '#1d1e22', 'متاح', '#1d1e22'], reserved: ['repeating-linear-gradient(135deg,#C6C8CC 0 2px,#F1F1EE 2px 5px)', '#1d1e22', 'محجوز', '#9DA0A7'], sold: ['#1d1e22', '#fff', 'مباع', '#1d1e22'] };
+const Swatch = ({ s }) => <span className="w-3 h-3 rounded-[3px] border flex-none" style={{ background: ST[s][0], borderColor: ST[s][3] }} />;
+const Legend = ({ className = '' }) => <div className={`flex flex-wrap items-center gap-3 text-[12.5px] text-ink-600 ${className}`}>{Object.keys(ST).map((s) => <span key={s} className="inline-flex items-center gap-1.5"><Swatch s={s} />{ST[s][2]}</span>)}</div>;
 
 export default function Tower() {
   const { projectId } = useParams();
   const S = useSite();
-  const L = useLayout();
   const nav = useNavigate();
   const towers = S.projs.filter((p) => p.type === 'tower');
   const proj = towers.find((p) => p.id === projectId) || towers[0];
@@ -35,53 +39,128 @@ export default function Tower() {
     return [...m.entries()].map(([n, us]) => ({ n, us }));
   }, [units]);
 
-  if (!proj) return <section style={{ paddingTop: 28 }}><PageHead kicker="الأدوات" title="مستكشف البرج" h1Fs={L.h1Fs} sub="لا توجد أبراج منشورة حالياً." /></section>;
+  if (!proj) return <section className="wrap pt-6 lg:pt-8 pb-16"><Crumbs items={[['الرئيسية', '/'], ['مشاريع جديدة', '/projects'], ['مستكشف البرج']]} /><div className="mt-5"><PageHead kicker="الأدوات" title="مستكشف البرج" sub="لا توجد أبراج منشورة حالياً." /></div><Link to="/projects" className="btn btn-line btn-sm mt-6">كل المشاريع</Link></section>;
   const shown = all ? floors : floors.slice(0, 12);
   const cur = floors.find((f) => f.n === floor);
   const free = cur ? cur.us.filter((u) => u.status === 'free') : [];
+  const totalFree = floors.reduce((a, f) => a + f.us.filter((u) => u.status === 'free').length, 0);
+  const idx = floors.findIndex((f) => f.n === floor);
+  const go = (f) => { if (f) { setFloor(f.n); setUnit(null); } };
+  const up = floors[idx - 1], down = floors[idx + 1];
+  const from = free.length ? Math.min(...free.map((u) => u.price)) : null;
+  const beds = cur ? [...new Set(cur.us.map((u) => u.beds))].sort((a, b) => a - b).join(' · ') : '';
+  const calc = () => { const u = unit || free[0]; nav(`/tools/payment?price=${u.price}&down=${proj.plan_down || 20}&months=${proj.plan_months || 36}&handover=${proj.plan_handover}`); };
+  const canCalc = !!(unit || free[0]);
+
+  const UnitRow = ({ u }) => <button key={u.id} type="button" onClick={() => setUnit(u)} className={`w-full flex items-center justify-between gap-2 p-2.5 rounded-[12px] border text-start transition-colors ${unit?.id === u.id ? 'border-ink bg-paper-2' : 'hair hover:border-ink'}`}><span><span className="font-semibold mono">{u.unit}</span> <span className="lbl">· {u.beds} غرف · {u.size} م²</span></span><b className="num text-[13.5px]" dir="ltr">{S.money(u.price)}</b></button>;
 
   return (
-    <section style={{ paddingTop: 28 }}>
-      <PageHead kicker={`الأدوات · ${proj.name}`} title="مستكشف البرج" h1Fs={L.h1Fs} sub="اختار الطابق، ثم الوحدة. الطوابق العليا = إطلالة أوسع وسعر أعلى بقليل." />
-      {towers.length > 1 && <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 16 }}>{towers.map((t) => <Chip key={t.id} on={t.id === proj.id} onClick={() => nav(`/tools/tower/${t.id}`, { replace: true })}>{t.name}</Chip>)}</div>}
+    <div className="pb-[90px] lg:pb-16">
+      <style>{'.tw-u:not(:disabled):hover{border-color:#1D1E22;box-shadow:inset 0 0 0 1px #1D1E22}.tw-u:disabled{cursor:default}.tw-u:focus-visible{outline:2px solid #C8102E;outline-offset:2px}'}</style>
+      <div className="wrap pt-5 lg:pt-7">
+        <Crumbs items={[['مشاريع جديدة', '/projects'], [proj.name, proj.href], ['مستكشف البرج']]} />
+        <div className="flex flex-wrap items-end justify-between gap-4 mt-4">
+          <div><div className="eyebrow mb-2">مستكشف البرج</div><h1 className="t-h1 text-[30px] sm:text-[42px]">{proj.name}</h1><p className="text-ink-600 mt-1">{proj.typeAr} · {proj.areaName}{proj.floors ? ` · ${proj.floors} طابق` : ''} · {proj.status === 'construction' ? <>{proj.progress}% منجز · <span dir="ltr">{proj.handover}</span></> : 'جاهز'}</p></div>
+          <Link to={proj.href} className="btn btn-line btn-sm">تفاصيل المشروع<Icon name="arrow" size={15} className="flip-rtl" /></Link>
+        </div>
+        {towers.length > 1 && <div className="mt-5 flex gap-2 overflow-x-auto no-sb -mx-4 px-4 md:mx-0 md:px-0">{towers.map((t) => <Chip key={t.id} className="flex-none" on={t.id === proj.id} onClick={() => nav(`/tools/tower/${t.id}`, { replace: true })}><Icon name="tower" size={15} />{t.name}{t.floors ? <span className="opacity-60 num">{t.floors}F</span> : null}</Chip>)}</div>}
+        <div className="mt-4 flex items-start gap-2.5 rounded-[14px] bg-paper-2 px-4 py-3 text-[13px] text-ink-600"><Icon name="info" size={16} className="text-ink-400 mt-0.5" /><span><b className="text-ink">اختار الطابق، ثم الوحدة.</b> الطوابق العليا = إطلالة أوسع وسعر أعلى بقليل. ڤايرو يتأكد من الحالة الفعلية ويا المطوّر قبل أي حجز.</span></div>
+        <div className="mt-5 flex flex-wrap items-center gap-2"><Legend className="ms-auto" /></div>
+      </div>
+
       {!units ? <Spinner /> : floors.length === 0 ? (
-        <div style={{ marginTop: 24, padding: 40, textAlign: 'center', color: '#767a83', border: '1px dashed #d8d8d3', borderRadius: 20 }}>مخطط الوحدات لهذا البرج غير متوفر بعد.</div>
+        <div className="wrap mt-6"><div className="panel-s p-10 text-center"><div className="t-h3 text-[20px]">مخطط الوحدات لهذا البرج غير متوفر بعد.</div><p className="text-ink-600 mt-2">اسأل ڤايرو عن الوحدات المتاحة وقائمة الأسعار.</p><Link to={proj.href} className="btn btn-ink btn-sm mt-5">تفاصيل المشروع</Link></div></div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: L.sideCols, gap: 28, marginTop: 24, alignItems: 'start' }}>
-          <div style={{ border: '1px solid #e7e7e3', borderRadius: 20, padding: L.phone ? 10 : 16, display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <div style={{ display: 'flex', gap: 16, fontSize: 12, color: '#767a83', padding: '0 8px 8px' }}>
-              {Object.values(ST).map(([bg, , t]) => <span key={t} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><span style={{ width: 12, height: 12, borderRadius: 3, background: bg, border: bg === '#fff' ? '1px solid #d8d8d3' : 0 }} />{t}</span>)}
-            </div>
-            {shown.map((f) => (
-              <button key={f.n} className="h-bg" onClick={() => { setFloor(f.n); setUnit(null); }} style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: 8, alignItems: 'center', padding: '4px 8px', borderRadius: 10, border: 0, background: f.n === floor ? '#f6f6f4' : 'transparent', cursor: 'pointer', whiteSpace: 'nowrap', outline: f.n === floor ? '1.5px solid #1d1e22' : 0 }}>
-                <span style={{ fontSize: 13, fontWeight: 600, color: f.n === floor ? '#1d1e22' : '#767a83', fontVariantNumeric: 'tabular-nums' }}>{f.n}</span>
-                <span style={{ display: 'grid', gridTemplateColumns: `repeat(${f.us.length},1fr)`, gap: 4 }}>
-                  {f.us.map((u) => <span key={u.id} style={{ height: 28, borderRadius: 6, border: '1px solid #d8d8d3', background: ST[u.status][0], color: ST[u.status][1], fontSize: 11, fontWeight: 600, display: 'grid', placeItems: 'center' }}>{u.unit}</span>)}
-                </span>
-              </button>
-            ))}
-            {floors.length > 12 && <button onClick={() => setAll(!all)} style={{ fontSize: 12.5, color: '#767a83', textAlign: 'center', padding: 8, border: 0, background: 'transparent', cursor: 'pointer' }}>{all ? 'إخفاء الطوابق السفلى' : `… الطوابق 1–${floors[11].n - 1} · اعرض الكل`}</button>}
-          </div>
-          <aside style={{ position: L.asidePos, top: 92, display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <div style={{ border: '1px solid #e7e7e3', borderRadius: 20, padding: 22 }}>
-              <div style={{ fontSize: 12, color: '#767a83' }}>الطابق المختار</div>
-              <div style={{ fontSize: 34, fontWeight: 700, marginTop: 2 }}>{floor ?? '—'}</div>
-              {cur && <div style={{ fontSize: 13.5, color: '#5a5e68', marginTop: 4 }}>{cur.us.length} وحدات · {free.length} متاحة</div>}
-              <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {free.length === 0 && cur && <div style={{ fontSize: 13.5, color: '#767a83' }}>كل وحدات هذا الطابق محجوزة أو مباعة.</div>}
-                {free.map((u) => (
-                  <button key={u.id} onClick={() => setUnit(u)} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 12px', border: unit?.id === u.id ? '2px solid #1d1e22' : '1px solid #e7e7e3', borderRadius: 12, fontSize: 14, background: '#fff', cursor: 'pointer', gap: 8 }}>
-                    <span>وحدة {u.unit} · {u.beds} غرف · {u.size} م²</span><span style={{ fontWeight: 700 }} dir="ltr">{S.money(u.price)}</span>
+        <div className="wrap mt-5 grid lg:grid-cols-[250px_minmax(0,1fr)_360px] gap-5 items-start">
+          <div className="panel p-4 lg:sticky top-[88px]">
+            <div className="flex items-center justify-between mb-2"><div className="font-semibold text-[14px]">الواجهة</div><div className="lbl">{totalFree} متاح</div></div>
+            <div className="flex flex-col gap-0.5">
+              {shown.map((f) => {
+                const on = f.n === floor, nf = f.us.filter((u) => u.status === 'free').length;
+                return (
+                  <button key={f.n} type="button" onClick={() => go(f)} className={`grid gap-1.5 items-center px-1.5 py-1 rounded-[8px] transition-colors ${on ? 'bg-red-50' : 'hover:bg-paper-2'}`} style={{ gridTemplateColumns: '28px 1fr 20px' }} aria-pressed={on} title={`الطابق ${f.n} · ${nf} متاح`}>
+                    <span className={`text-[11px] mono text-start ${on ? 'text-red font-bold' : 'text-ink-400'}`}>{f.n}</span>
+                    <span className="grid gap-0.5" style={{ gridTemplateColumns: `repeat(${f.us.length},1fr)` }}>{f.us.map((u) => <span key={u.id} className="h-3 rounded-[2px] border" style={{ background: ST[u.status][0], borderColor: ST[u.status][3] }} />)}</span>
+                    <span className="text-[10px] mono font-semibold text-ink text-end">{nf || ''}</span>
                   </button>
-                ))}
+                );
+              })}
+            </div>
+            {floors.length > 12 && <button type="button" onClick={() => setAll(!all)} className="w-full mt-1 h-9 rounded-[10px] text-[12.5px] font-semibold text-ink-600 hover:bg-paper-2 inline-flex items-center justify-center gap-1.5">{all ? 'إخفاء الطوابق السفلى' : `الطوابق 1–${floors[11].n - 1} · اعرض الكل`}<Icon name="chev-d" size={14} className={all ? 'rotate-180' : ''} /></button>}
+            <div className="lbl mt-2">اضغط على طابق حتى تفتحه</div>
+          </div>
+
+          <div className="min-w-0">
+            <div className="panel p-4 sm:p-6">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div><div className="lbl">مخطط الطابق</div><div className="t-h3 text-[22px]">الطابق <span className="num">{floor ?? '—'}</span>{cur && <span className="text-[14px] text-ink-500 font-medium"> · {cur.us.length} وحدات · {free.length} متاحة</span>}</div></div>
+                <div className="flex items-center gap-2"><Btn kind="line" size="sm" disabled={!down} onClick={() => go(down)}><Icon name="chev-d" size={16} />نزول</Btn><Btn kind="line" size="sm" disabled={!up} onClick={() => go(up)}><Icon name="chev-d" size={16} className="rotate-180" />صعود</Btn></div>
               </div>
-              <Btn kind="dark" h={46} fs={14.5} style={{ marginTop: 16, width: '100%' }} disabled={!unit && !free[0]} onClick={() => { const u = unit || free[0]; nav(`/tools/payment?price=${u.price}&down=${proj.plan_down || 20}&months=${proj.plan_months || 36}&handover=${proj.plan_handover}`); }}>احسب الأقساط لهذي الوحدة</Btn>
-              <Btn h={42} style={{ marginTop: 8, width: '100%' }} disabled={!unit} onClick={() => setLead(true)}>اطلب حجز الوحدة</Btn>
+              {cur ? (
+                <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                  {cur.us.map((u) => {
+                    const sel = unit?.id === u.id, isFree = u.status === 'free';
+                    return (
+                      <button key={u.id} type="button" disabled={!isFree} onClick={() => setUnit(u)} aria-pressed={sel} className="tw-u text-start p-3 rounded-[12px] border transition-colors" style={{ background: sel ? '#FDF2F4' : ST[u.status][0], color: ST[u.status][1], borderColor: sel ? '#C8102E' : ST[u.status][3], boxShadow: sel ? 'inset 0 0 0 1.5px #C8102E' : undefined }}>
+                        <div className="flex items-center justify-between gap-2"><span className="mono font-bold text-[15px]">{u.unit}</span><span className="text-[10.5px] font-semibold opacity-80">{ST[u.status][2]}</span></div>
+                        <div className="text-[11.5px] opacity-70 mt-1">{u.beds} غرف · {u.size} م²</div>
+                        <div className="num font-semibold text-[13px] mt-1.5" dir="ltr">{isFree ? S.money(u.price) : '—'}</div>
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : <div className="mt-4 rounded-[12px] bg-paper-2 p-4 text-[13.5px] text-ink-600">اختار طابق من الواجهة.</div>}
+              {cur && (
+                <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+                  {[[`${free.length} / ${cur.us.length}`, 'متاح'], [from ? S.money(from) : '—', 'يبدأ من'], [beds || '—', 'غرف نوم']].map(([v, l]) => <div key={l} className="rounded-[12px] bg-paper-2 p-2.5"><div className="font-semibold num text-[15px]" dir="ltr">{v}</div><div className="lbl">{l}</div></div>)}
+                </div>
+              )}
+              <Legend className="mt-3 justify-center text-[12px] lg:hidden" />
+            </div>
+          </div>
+
+          <aside className="lg:sticky top-[88px]">
+            <div className="panel p-5 shadow-card">
+              {unit ? (
+                <>
+                  <div className="flex items-start justify-between gap-3"><div><div className="lbl">الوحدة · الطابق {unit.floor}</div><div className="text-[30px] font-semibold mono leading-tight">{unit.unit}</div></div><span className="tag bg-white border border-ink text-ink">{ST[unit.status][2]}</span></div>
+                  <div className="mt-3"><div className="text-[28px] font-semibold num" dir="ltr">{S.money(unit.price)}</div>{unit.size > 0 && <div className="lbl">{S.money(Math.round(unit.price / unit.size))} للمتر</div>}</div>
+                  <dl className="grid grid-cols-2 gap-px bg-line rounded-[14px] overflow-hidden border hair mt-4 text-[13.5px]">
+                    {[['المساحة', `${unit.size} م²`], ['غرف النوم', unit.beds], ['الطابق', `${unit.floor} / ${floors[0]?.n ?? unit.floor}`], ['البرج', proj.name]].map(([l, v]) => <div key={l} className="bg-white p-3"><dt className="lbl">{l}</dt><dd className="font-semibold num mt-0.5 clamp-1">{v}</dd></div>)}
+                  </dl>
+                </>
+              ) : (
+                <>
+                  <div className="lbl">الطابق {floor ?? '—'}</div>
+                  <div className="t-h3 text-[20px] mt-1">اختار وحدة من المخطط</div>
+                  <p className="text-[13.5px] text-ink-600 mt-1">الوحدات البيضة بإطار غامق متاحة. كل وحدة تبيّن المساحة والغرف والسعر.</p>
+                  <div className="mt-4 space-y-1.5">
+                    {free.slice(0, 5).map((u) => <UnitRow key={u.id} u={u} />)}
+                    {cur && free.length === 0 && <div className="rounded-[12px] bg-paper-2 p-3 text-[13px] text-ink-600">كل وحدات هذا الطابق محجوزة أو مباعة. جرّب طابق ثاني.</div>}
+                  </div>
+                </>
+              )}
+              <div className="grid gap-2 mt-5">
+                <Btn kind={unit ? 'red' : 'line'} disabled={!unit} onClick={() => setLead(true)}><Icon name="cal" size={17} />اطلب حجز الوحدة</Btn>
+                <Btn kind={unit ? 'line' : 'dark'} disabled={!canCalc} onClick={calc}><Icon name="chart" size={17} />احسب الأقساط لهذي الوحدة</Btn>
+              </div>
+              <p className="lbl mt-3">ڤايرو يتأكد من التوفّر والسعر ويا المطوّر قبل الحجز.</p>
             </div>
           </aside>
         </div>
       )}
+
+      {units && floors.length > 0 && (
+        <div className="fixed bottom-[60px] inset-x-0 z-40 lg:hidden bg-white border-t hair px-4 py-2.5 flex items-center gap-2">
+          {unit ? (
+            <><div className="min-w-0 flex-1"><div className="lbl">الوحدة <span className="mono">{unit.unit}</span> · الطابق {unit.floor}</div><div className="font-semibold num" dir="ltr">{S.money(unit.price)}</div></div><Btn kind="line" size="sm" onClick={calc}><Icon name="chart" size={15} />الأقساط</Btn><Btn kind="red" size="sm" onClick={() => setLead(true)}>اطلب حجز</Btn></>
+          ) : (
+            <><div className="min-w-0 flex-1"><div className="lbl">الطابق {floor ?? '—'} · {free.length} متاح</div><div className="font-semibold num" dir="ltr">{from ? S.money(from) : '—'}</div></div><Btn kind="dark" size="sm" disabled={!canCalc} onClick={calc}><Icon name="chart" size={15} />احسب الأقساط</Btn></>
+          )}
+        </div>
+      )}
+
       {lead && unit && <LeadModal title="طلب حجز وحدة" sub={`${proj.name} · الطابق ${unit.floor} · وحدة ${unit.unit} · ${S.money(unit.price)}`} kind="brochure" deal="sale" budget={unit.price} onClose={() => setLead(false)} buildMessage={() => `${proj.name} — الطابق ${unit.floor} وحدة ${unit.unit} (${unit.beds} غرف، ${unit.size} م²) بسعر $${unit.price}`} submitLabel="أرسل طلب الحجز" />}
-    </section>
+    </div>
   );
 }

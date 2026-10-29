@@ -3,8 +3,8 @@ import { Navigate, Route, Routes, useLocation, useNavigate, useSearchParams } fr
 import { supabase } from '../lib/supabase.js';
 import { useAuth } from '../lib/auth.jsx';
 import { STATUS, TYPE_AR, listingFacts, listingTitle, usd, PROJECT_TYPES } from '../lib/format.js';
-import { Btn, Spinner } from '../components/ui.jsx';
-import { Shell, StaffGate } from '../staff/Shell.jsx';
+import { Btn, Icon, Spinner } from '../components/ui.jsx';
+import { OsEmpty, Shell, StaffGate } from '../staff/Shell.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import Listings from './pages/Listings.jsx';
 import ListingEditor from './pages/ListingEditor.jsx';
@@ -55,7 +55,7 @@ function CmsDataProvider({ children }) {
         title: listingTitle(l, P[l.project_id]), facts: listingFacts(l), typeAr: TYPE_AR[l.type],
         areaName: A_[l.area_id]?.name || '', projName: P[l.project_id]?.name || '', agent: G[l.agent_id] || null,
         priceText: usd(l.deal === 'rent' ? l.rent : l.price), dealLabel: l.deal === 'rent' ? 'للإيجار' : 'للبيع',
-        statusLabel: st[0], statusColor: st[1], statusBg: st[2],
+        statusLabel: l.status === 'sold' && l.deal === 'rent' ? 'مؤجّر' : st[0], statusColor: st[1], statusBg: st[2],
         canEdit: A.isEditor || (A.isAgent && l.agent_id === A.me?.agent_id),
       };
     });
@@ -63,7 +63,7 @@ function CmsDataProvider({ children }) {
     return { ...raw, listings, projects, A: A_, P, G, DV, reload: load };
   }, [raw, load, A.isEditor, A.isAgent, A.me]);
 
-  if (error) return <div style={{ padding: 60, textAlign: 'center' }}>تعذّر تحميل البيانات: {error} <Btn onClick={load}>إعادة المحاولة</Btn></div>;
+  if (error) return <div className="min-h-screen flex items-center justify-center p-4 bg-paper-2" dir="rtl"><OsEmpty icon="info" title="تعذّر تحميل البيانات" className="w-full max-w-md" action={<Btn size="sm" kind="dark" onClick={load}>إعادة المحاولة</Btn>}>{error}</OsEmpty></div>;
   if (!value) return <Spinner pad={160} />;
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
@@ -75,18 +75,18 @@ function CmsShell() {
   const loc = useLocation();
   const [sp] = useSearchParams();
   const items = [
-    { to: '/cms', label: 'لوحة التحكم' },
+    { to: '/cms', label: 'لوحة التحكم', icon: 'sparkle' },
     { section: 'المحتوى' },
-    { to: '/cms/listings', label: 'العقارات', count: C.listings.length, match: (p) => p.startsWith('/cms/listings') },
+    { to: '/cms/listings', label: 'العقارات', icon: 'building', count: C.listings.length, match: (p) => p.startsWith('/cms/listings') },
     ...(A.isEditor ? [
-      { to: '/cms/projects', label: 'المشاريع', count: C.projects.length, match: (p) => p.startsWith('/cms/projects') },
-      { to: '/cms/developers', label: 'المطوّرون' },
-      { to: '/cms/areas', label: 'المناطق' },
+      { to: '/cms/projects', label: 'المشاريع', icon: 'compound', count: C.projects.length, match: (p) => p.startsWith('/cms/projects') },
+      { to: '/cms/developers', label: 'المطوّرون', icon: 'briefcase' },
+      { to: '/cms/areas', label: 'المناطق', icon: 'compass' },
     ] : []),
     ...(A.isAdmin ? [
       { section: 'الموقع' },
-      { to: '/cms/home', label: 'الرئيسية وإعدادات الموقع' },
-      { to: '/cms/users', label: 'المستخدمون والصلاحيات' },
+      { to: '/cms/home', label: 'الرئيسية وإعدادات الموقع', icon: 'home' },
+      { to: '/cms/users', label: 'المستخدمون والصلاحيات', icon: 'users' },
     ] : []),
   ];
   const onListings = loc.pathname === '/cms/listings';
@@ -95,8 +95,9 @@ function CmsShell() {
       search={onListings ? sp.get('q') || '' : ''} searchPlaceholder="ابحث برقم العقار أو الاسم…"
       onSearch={(q) => nav(`/cms/listings${q ? '?q=' + encodeURIComponent(q) : ''}`)}
       actions={<>
-        <Btn onClick={() => nav('/')}>عرض الموقع</Btn>
-        <Btn kind="red" onClick={() => nav('/cms/listings/new')}>+ عقار جديد</Btn>
+        <Btn size="sm" className="hidden sm:inline-flex" onClick={() => nav('/')}><Icon name="globe" size={15} />عرض الموقع</Btn>
+        <Btn kind="red" size="sm" className="hidden sm:inline-flex" onClick={() => nav('/cms/listings/new')}><Icon name="plus" size={16} />عقار جديد</Btn>
+        <button type="button" className="icon-btn sm:hidden" aria-label="عقار جديد" onClick={() => nav('/cms/listings/new')}><Icon name="plus" size={20} /></button>
       </>}>
       <Routes>
         <Route index element={<Dashboard />} />

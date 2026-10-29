@@ -2,11 +2,13 @@ import { useMemo, useState } from 'react';
 import { useCms } from '../CmsApp.jsx';
 import { supabase, q } from '../../lib/supabase.js';
 import { useDocTitle } from '../../lib/hooks.js';
-import { Btn, Card, Field, Modal, StatusPill, Toggle, useToast } from '../../components/ui.jsx';
-import { PageTitle } from '../../staff/Shell.jsx';
+import { Btn, Field, Icon, Img, Modal, Toggle, useToast } from '../../components/ui.jsx';
+import { Lmini, Osb, OsCard, PageTitle, StatusBadge, SwRow } from '../../staff/Shell.jsx';
 
 const SECTIONS = [['types', 'أنواع العقارات'], ['featured', 'عقارات مميزة'], ['areas', 'المناطق والخريطة'], ['tools', 'الأدوات'], ['owners', 'الملاك والاستثمار']];
+const F = 'field !h-10 !text-[13.5px]';
 
+// Ported from the reference's homepage + site settings pages (os/web_pages.js /web/home, /web/settings).
 export default function HomeSettings() {
   useDocTitle('الرئيسية وإعدادات الموقع');
   const C = useCms();
@@ -39,83 +41,84 @@ export default function HomeSettings() {
   const moveFeat = (from, to) => { if (from == null || from === to) return; const a = [...feat]; const [x] = a.splice(from, 1); a.splice(to, 0, x); setFeat(a); };
   const toggleArea = (id) => setF({ ...f, home_areas: f.home_areas.includes(id) ? f.home_areas.filter((x) => x !== id) : [...f.home_areas, id] });
   const fp = C.P[f.featured_project_id];
+  const publishBtn = <Btn kind="red" size="sm" disabled={busy || !dirty} onClick={publish}><Icon name="globe" size={15} />نشر التغييرات</Btn>;
 
   return (
     <>
-      <PageTitle sub="ما يظهر للزائر أول ما يفتح الموقع" action={<>{dirty && <span style={{ alignSelf: 'center', fontSize: 12.5, color: '#b26a00' }}>تغييرات غير منشورة</span>}<Btn kind="red" disabled={busy || !dirty} onClick={publish}>نشر التغييرات</Btn></>}>الصفحة الرئيسية</PageTitle>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(min(100%,360px),1fr))', gap: 16, alignItems: 'start' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, gridColumn: 'span 2', minWidth: 0 }}>
-          <Card>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, gap: 12 }}><div><div style={{ fontWeight: 600 }}>عقارات مميزة</div><div style={{ fontSize: 12.5, color: '#767a83' }}>اسحب لإعادة الترتيب · حتى 8 عقارات</div></div><Btn h={34} r={10} px={12} fs={13} disabled={feat.length >= 8} onClick={() => setPicker(true)}>+ إضافة من العقارات</Btn></div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {feat.length === 0 && <div style={{ fontSize: 13, color: '#767a83' }}>لا توجد عقارات مميزة — القسم يختفي من الرئيسية</div>}
-              {feat.map((id, i) => {
-                const l = byId[id];
-                if (!l) return null;
-                return (
-                  <div key={id} draggable onDragStart={() => setDrag(i)} onDragOver={(e) => e.preventDefault()} onDrop={() => { moveFeat(drag, i); setDrag(null); }} className={drag === i ? 'dragging' : ''} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 12px', border: '1px solid #e7e7e3', borderRadius: 12, background: '#fff' }}>
-                    <span style={{ color: '#9da0a7', cursor: 'grab' }}>⋮⋮</span>
-                    {l.img ? <img src={l.img} alt="" style={{ width: 56, height: 42, borderRadius: 8, objectFit: 'cover' }} /> : <span style={{ width: 56, height: 42, borderRadius: 8, background: '#f6f6f4' }} />}
-                    <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontWeight: 600, fontSize: 13.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{l.title}</div><div style={{ fontSize: 12, color: '#767a83' }}>{l.id} · {l.areaName} · {l.priceText}</div></div>
-                    <StatusPill label={l.statusLabel} color={l.statusColor} bg={l.statusBg} />
-                    <button aria-label="إزالة" onClick={() => setFeat(feat.filter((x) => x !== id))} style={{ width: 30, height: 30, borderRadius: 8, border: '1px solid #d8d8d3', background: '#fff', cursor: 'pointer', fontSize: 12 }}>✕</button>
-                  </div>
-                );
-              })}
-            </div>
-          </Card>
-          <Card><div style={{ fontWeight: 600, marginBottom: 14 }}>المناطق في الرئيسية</div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+      <PageTitle sub="أول صفحة يشوفها الزبون — العنوان والأقسام والمميز، وبيانات المكتب" action={<>{dirty && <Osb tone="amber">تغييرات غير منشورة</Osb>}<a href="/" target="_blank" rel="noreferrer" className="btn btn-line btn-sm"><Icon name="globe" size={15} />شوف الرئيسية</a>{publishBtn}</>}>الصفحة الرئيسية وإعدادات الموقع</PageTitle>
+      <div className="os-cols" style={{ '--side': '400px' }}>
+        <div className="grid gap-5 min-w-0">
+          <OsCard title="عقارات مميزة · «مختارات للبيع / للإيجار»" sub="اسحب لإعادة الترتيب · حتى 8 عقارات" extra={<span className="text-[12px] text-ink-500 num">{feat.length}/8</span>}>
+            {feat.length === 0 ? <p className="text-[13px] text-ink-500">ماكو اختيار — القسم يختفي من الرئيسية.</p> : (
+              <ol className="divide-y hair">
+                {feat.map((id, i) => {
+                  const l = byId[id];
+                  if (!l) return null;
+                  return (
+                    <li key={id} draggable onDragStart={() => setDrag(i)} onDragOver={(e) => e.preventDefault()} onDrop={() => { moveFeat(drag, i); setDrag(null); }} className={`flex items-center gap-2 sm:gap-3 py-2 ${drag === i ? 'dragging' : ''}`}>
+                      <span className="w-6 text-center num text-[12px] text-ink-400 flex-none">{i + 1}</span>
+                      <span className="text-ink-300 cursor-grab flex-none" aria-hidden="true"><Icon name="drag" size={16} /></span>
+                      <div className="min-w-0 flex-1"><Lmini img={l.img} title={l.title} id={l.id} sub={`${l.areaName} · ${l.priceText}`} /></div>
+                      <StatusBadge status={l.status} label={l.statusLabel} />
+                      <button type="button" className="icon-btn !w-8 !h-8 text-ink-400 hover:text-red" aria-label="إزالة" onClick={() => setFeat(feat.filter((x) => x !== id))}><Icon name="close" size={15} /></button>
+                    </li>
+                  );
+                })}
+              </ol>
+            )}
+            <div className="flex flex-wrap items-center gap-2 mt-3"><Btn size="sm" disabled={feat.length >= 8} onClick={() => setPicker(true)}><Icon name="plus" size={15} />إضافة من العقارات</Btn></div>
+            <p className="text-[11.5px] text-ink-500 mt-2">المختارة تجي أول بالصفحة الرئيسية، والمباع أو المخفي ينترك تلقائياً.</p>
+          </OsCard>
+          <OsCard title="المناطق في الرئيسية" sub="أول 4 مناطق مختارة تظهر في قسم «وين تريد تسكن؟»">
+            <div className="flex flex-wrap gap-1.5">
               {C.areas.map((a) => { const idx = f.home_areas.indexOf(a.id); const on = idx >= 0; return (
-                <button key={a.id} onClick={() => toggleArea(a.id)} style={{ height: 34, padding: '0 12px', borderRadius: 999, border: on ? 0 : '1px solid #d8d8d3', background: on ? '#1d1e22' : '#fff', color: on ? '#fff' : '#1d1e22', fontSize: 13, display: 'inline-flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap', cursor: 'pointer' }}>{on && <b style={{ fontSize: 11, opacity: 0.7 }}>{idx + 1}</b>}{a.short}</button>
+                <button type="button" key={a.id} onClick={() => toggleArea(a.id)} className={`chip chip-sm ${on ? 'on' : ''}`} aria-pressed={on}>{on && <b className="num opacity-70">{idx + 1}</b>}{a.short}</button>
               ); })}
             </div>
-            <div style={{ fontSize: 12.5, color: '#767a83', marginTop: 10 }}>أول 4 مناطق مختارة تظهر في قسم «وين تريد تسكن؟»</div>
-          </Card>
-          <Card><div style={{ fontWeight: 600, marginBottom: 14 }}>المشروع المميز في القائمة</div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 10, border: '1px solid #d8d8d3', borderRadius: 12 }}>
-              {fp?.img && <img src={fp.img} alt="" style={{ width: 64, height: 48, borderRadius: 8, objectFit: 'cover' }} />}
-              <select className="sel" value={f.featured_project_id} onChange={set('featured_project_id')} style={{ flex: 1, border: 0, outline: 0, fontWeight: 600, fontSize: 14, background: 'transparent', height: 40 }}>
+          </OsCard>
+          <OsCard title="المشروع المميز · صفحة المشاريع" sub="يظهر أولاً في صفحة «مشاريع جديدة»">
+            <div className="flex items-center gap-3 p-2 rounded-[12px] border hair">
+              {fp?.img && <Img src={fp.img} className="w-16 h-12 rounded-[8px] flex-none" />}
+              <select className={`${F} flex-1 min-w-0`} value={f.featured_project_id} onChange={set('featured_project_id')}>
                 <option value="">— بدون —</option>{C.projects.map((p) => <option key={p.id} value={p.id}>{p.name} · {p.areaName} · {p.statusLabel}</option>)}
               </select>
             </div>
-            <div style={{ fontSize: 12.5, color: '#767a83', marginTop: 10 }}>يظهر أولاً في صفحة «مشاريع جديدة».</div>
-          </Card>
+          </OsCard>
+          <div className="sticky bottom-[72px] lg:bottom-4 z-20 os-card shadow-pop p-3 flex flex-wrap items-center gap-2">
+            <span className="flex gap-2">{publishBtn}</span>
+            <span className="text-[12.5px] text-ink-600 flex items-center gap-2 min-w-0 flex-1"><span className={`w-2 h-2 rounded-full flex-none ${dirty ? 'bg-warn' : 'bg-ok'}`} /><span>{dirty ? 'تغييرات مو منشورة — الموقع بعده يعرض النسخة المنشورة' : 'منشور · الموقع محدّث'}</span></span>
+          </div>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, minWidth: 0 }}>
-          <Card pad={18}><div style={{ fontWeight: 600, marginBottom: 12 }}>نص الواجهة</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <Field label="السطر العلوي"><input className="inp-sm" value={f.hero_kicker} onChange={set('hero_kicker')} /></Field>
-              <Field label="العنوان (استخدم *نجمتين* للتلوين)"><textarea className="inp" rows={2} value={f.hero_title} onChange={set('hero_title')} style={{ fontSize: 14 }} /></Field>
-              <Field label="شريط الإعلان (اختياري)"><input className="inp-sm" value={f.announcement} onChange={set('announcement')} placeholder="مثلاً: معرض العقارات 1–3 نوفمبر" /></Field>
+        <aside className="os-aside grid gap-5 min-w-0">
+          <OsCard title="الواجهة" sub="نص أعلى الصفحة الرئيسية">
+            <div className="grid gap-4">
+              <Field label="العنوان الصغير"><input className={F} value={f.hero_kicker} onChange={set('hero_kicker')} /></Field>
+              <Field label="العنوان الرئيسي" hint="حط الكلمات بين *نجمتين* حتى تطلع باللون الأحمر."><textarea className="field !text-[13.5px] !min-h-[76px]" rows={2} value={f.hero_title} onChange={set('hero_title')} /></Field>
+              <Field label="شريط الإعلان (اختياري)" hint="يظهر بشريط الموقع لحد ما ينشال."><input className={F} value={f.announcement} onChange={set('announcement')} placeholder="مثلاً: معرض العقارات 1–3 نوفمبر" /></Field>
             </div>
-          </Card>
-          <Card pad={18}><div style={{ fontWeight: 600, marginBottom: 4 }}>إعدادات العرض العامة</div><div style={{ fontSize: 12.5, color: '#767a83', marginBottom: 12 }}>تنطبق على كل صفحات العقارات والمشاريع</div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
-              <div><div style={{ fontWeight: 600, fontSize: 14 }}>إظهار الوسيط المسؤول</div><div style={{ fontSize: 12.5, color: '#767a83', lineHeight: 1.5 }}>{f.show_agent ? 'يظهر اسم الوسيط وصورته ورقمه على صفحة كل عقار' : 'مخفي — يظهر «فريق ڤايرو» ورقم المكتب بدلاً عنه'}</div></div>
-              <Toggle on={f.show_agent} label="إظهار الوسيط المسؤول" onChange={set('show_agent')} />
+          </OsCard>
+          <OsCard title="إعدادات العرض العامة" sub="تنطبق على كل صفحات العقارات والمشاريع">
+            <div className="divide-y hair -my-1">
+              <SwRow label="إظهار الوسيط المسؤول" sub={f.show_agent ? 'يظهر اسم الوسيط وصورته ورقمه على صفحة كل عقار' : 'مخفي — يظهر «فريق ڤايرو» ورقم المكتب بدلاً عنه'}><Toggle on={f.show_agent} label="إظهار الوسيط المسؤول" onChange={set('show_agent')} /></SwRow>
+              <SwRow label="إظهار رقم العقار" sub="VS-1001 وما شابه على البطاقات"><Toggle on={f.show_listing_id} label="إظهار رقم العقار" onChange={set('show_listing_id')} /></SwRow>
             </div>
-            <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid #e7e7e3', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
-              <div><div style={{ fontWeight: 600, fontSize: 14 }}>إظهار رقم العقار</div><div style={{ fontSize: 12.5, color: '#767a83' }}>VS-1001 وما شابه على البطاقات</div></div>
-              <Toggle on={f.show_listing_id} label="إظهار رقم العقار" onChange={set('show_listing_id')} />
+          </OsCard>
+          <OsCard title="أقسام الصفحة الرئيسية" sub="اخفي قسم لحملة أو وقت تحديث محتواه. الترتيب يبقى مثل التصميم.">
+            <div className="divide-y hair -my-1">
+              {SECTIONS.map(([k, t]) => <SwRow key={k} label={t}><Toggle small on={f.sections[k]} label={t} onChange={(v) => setF({ ...f, sections: { ...f.sections, [k]: v } })} /></SwRow>)}
             </div>
-          </Card>
-          <Card pad={18}><div style={{ fontWeight: 600, marginBottom: 12 }}>أقسام الرئيسية</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, fontSize: 13.5 }}>
-              {SECTIONS.map(([k, t]) => <div key={k} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>{t}<Toggle small on={f.sections[k]} label={t} onChange={(v) => setF({ ...f, sections: { ...f.sections, [k]: v } })} /></div>)}
+          </OsCard>
+          <OsCard title="بيانات المكتب" sub="التواصل، الدوام، العملة">
+            <div className="grid gap-4">
+              <Field label="هاتف المكتب"><input className={`${F} mono`} dir="ltr" value={f.office_phone} onChange={set('office_phone')} /></Field>
+              <Field label="واتساب"><input className={`${F} mono`} dir="ltr" value={f.office_whatsapp} onChange={set('office_whatsapp')} /></Field>
+              <Field label="العنوان"><input className={F} value={f.office_address} onChange={set('office_address')} /></Field>
+              <Field label="ساعات الدوام" hint="تظهر في صفحة التواصل وصفحات العقارات"><input className={F} value={f.office_hours} onChange={set('office_hours')} placeholder="السبت – الخميس · 9:00 – 19:00" /></Field>
+              <Field label="رابط الموقع على خرائط Google"><input className={`${F} mono`} dir="ltr" value={f.office_map_url} onChange={set('office_map_url')} placeholder="https://maps.google.com/?q=…" /></Field>
+              <Field label="سعر الصرف (دينار لكل دولار)"><input className={`${F} num`} type="number" min="1" dir="ltr" value={f.iqd_rate} onChange={set('iqd_rate')} /></Field>
             </div>
-          </Card>
-          <Card pad={18}><div style={{ fontWeight: 600, marginBottom: 12 }}>بيانات المكتب</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <Field label="هاتف المكتب"><input className="inp-sm" dir="ltr" value={f.office_phone} onChange={set('office_phone')} /></Field>
-              <Field label="واتساب"><input className="inp-sm" dir="ltr" value={f.office_whatsapp} onChange={set('office_whatsapp')} /></Field>
-              <Field label="العنوان"><input className="inp-sm" value={f.office_address} onChange={set('office_address')} /></Field>
-              <Field label="ساعات الدوام" hint="تظهر في صفحة التواصل وصفحات العقارات"><input className="inp-sm" value={f.office_hours} onChange={set('office_hours')} placeholder="السبت – الخميس · 9:00 – 19:00" /></Field>
-              <Field label="رابط الموقع على خرائط Google"><input className="inp-sm" dir="ltr" value={f.office_map_url} onChange={set('office_map_url')} placeholder="https://maps.google.com/?q=…" /></Field>
-              <Field label="سعر الصرف (دينار لكل دولار)"><input className="inp-sm" type="number" min="1" value={f.iqd_rate} onChange={set('iqd_rate')} /></Field>
-            </div>
-          </Card>
-        </div>
+          </OsCard>
+        </aside>
       </div>
       {picker && <ListingPicker exclude={feat} onPick={(id) => { setFeat([...feat, id]); setPicker(false); }} onClose={() => setPicker(false)} />}
     </>
@@ -127,14 +130,13 @@ function ListingPicker({ exclude, onPick, onClose }) {
   const [qq, setQ] = useState('');
   const list = C.listings.filter((l) => (l.status === 'live' || l.status === 'reserved') && !exclude.includes(l.id) && (!qq || (l.id + l.title + l.areaName).includes(qq)));
   return (
-    <Modal title="إضافة عقار مميز" onClose={onClose}>
-      <input className="inp-sm" autoFocus placeholder="ابحث…" value={qq} onChange={(e) => setQ(e.target.value)} />
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 12, maxHeight: 400, overflowY: 'auto' }}>
-        {list.length === 0 && <div style={{ fontSize: 13, color: '#767a83' }}>لا توجد عقارات منشورة متاحة</div>}
+    <Modal title="إضافة عقار مميز" sub="العقارات المنشورة أو المحجوزة فقط" onClose={onClose}>
+      <div className="relative"><span className="absolute top-1/2 -translate-y-1/2 start-3 text-ink-400"><Icon name="search" size={16} /></span><input className="field !h-10 !text-[13.5px] !ps-9" autoFocus placeholder="ابحث برقم العقار أو الاسم…" value={qq} onChange={(e) => setQ(e.target.value)} /></div>
+      <div className="grid gap-1.5 mt-3 max-h-[380px] overflow-y-auto">
+        {list.length === 0 && <p className="text-[13px] text-ink-500 py-4 text-center">لا توجد عقارات منشورة متاحة</p>}
         {list.map((l) => (
-          <button key={l.id} className="h-row" onClick={() => onPick(l.id)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 8, border: '1px solid #e7e7e3', borderRadius: 10, background: '#fff', cursor: 'pointer', textAlign: 'start' }}>
-            {l.img && <img src={l.img} alt="" style={{ width: 48, height: 36, borderRadius: 6, objectFit: 'cover' }} />}
-            <div style={{ minWidth: 0 }}><div style={{ fontWeight: 600, fontSize: 13.5 }}>{l.title}</div><div style={{ fontSize: 12, color: '#767a83' }}>{l.id} · {l.priceText}</div></div>
+          <button type="button" key={l.id} onClick={() => onPick(l.id)} className="flex items-center gap-2.5 p-2 rounded-[12px] border hair hover:border-ink text-start min-w-0">
+            <Lmini img={l.img} title={l.title} id={l.id} sub={`${l.areaName} · ${l.priceText}`} />
           </button>
         ))}
       </div>

@@ -1,11 +1,9 @@
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useCrm } from '../CrmApp.jsx';
+import { useCrm, OsPage, OsTabs, OsEmpty, Badge, Who, Lmini, STAGE_TONE } from '../CrmApp.jsx';
 import { useDocTitle } from '../../lib/hooks.js';
-import { Chip, Empty, StatusPill } from '../../components/ui.jsx';
-import { PageTitle, ScrollX, TABLE, thead } from '../../staff/Shell.jsx';
+import { Btn, Icon } from '../../components/ui.jsx';
 
-const COLS = 'minmax(160px,1.3fr) 1fr 90px minmax(160px,1.4fr) 110px 100px 130px 110px';
-
+// Directory table (reference os/contacts.js): name + phone (mono) + source + listing mini + budget + stage + consultant + last activity.
 export default function Contacts() {
   useDocTitle('جهات الاتصال');
   const R = useCrm();
@@ -19,30 +17,32 @@ export default function Contacts() {
   const list = base.filter((c) => (filter === 'unassigned' ? !c.agent_id : filter === 'hot' ? c.isHot : true));
   return (
     <>
-      <PageTitle action={<>
-        <Chip on={!filter} onClick={() => set('f', '')}>الكل {base.length}</Chip>
-        <Chip on={filter === 'unassigned'} onClick={() => set('f', 'unassigned')}>غير مخصّص {base.filter((c) => !c.agent_id).length}</Chip>
-        <Chip on={filter === 'hot'} onClick={() => set('f', 'hot')}>ساخن</Chip>
-        {qq && <Chip on onClick={() => set('q', '')}>«{sp.get('q')}» ✕</Chip>}
-      </>}>جهات الاتصال</PageTitle>
-      {list.length === 0 ? <Empty>لا توجد جهات اتصال مطابقة</Empty> : (
-        <div style={TABLE}><ScrollX min={1060}>
-          <div style={thead(COLS)}><span>الاسم</span><span>الهاتف</span><span>المصدر</span><span>مهتم بـ</span><span>الميزانية</span><span>المرحلة</span><span>الوسيط</span><span>آخر نشاط</span></div>
-          {list.map((c) => (
-            <button key={c.id} className="h-row" onClick={() => nav(`/crm/contacts/${c.id}`)} style={{ width: '100%', display: 'grid', gridTemplateColumns: COLS, gap: 12, alignItems: 'center', padding: '12px 18px', border: 0, borderBottom: '1px solid #f0f0ed', background: 'transparent', fontSize: 13.5, cursor: 'pointer', textAlign: 'start' }}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 600 }}>{c.isHot && <span style={{ width: 8, height: 8, borderRadius: 999, background: '#c8102e', flex: 'none' }} />}{c.name}</span>
-              <span dir="ltr" style={{ textAlign: 'right' }}>{c.phone}</span>
-              <span style={{ color: '#5a5e68' }}>{c.source}</span>
-              <span style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
-                {c.listing ? <>{c.listing.img && <img src={c.listing.img} alt="" style={{ width: 36, height: 28, borderRadius: 6, objectFit: 'cover', flex: 'none' }} />}<span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 12.5 }}>{c.listing.id} · {c.listing.title}</span></> : <span style={{ color: '#9da0a7' }}>—</span>}
-              </span>
-              <span style={{ fontWeight: 600 }} dir="ltr">{c.budgetText}</span>
-              <StatusPill label={c.stageLabel} color="#1d1e22" bg="#f1f1ef" />
-              <span style={{ fontSize: 12.5, color: c.agent ? '#1d1e22' : '#c8102e' }}>{c.agentName}</span>
-              <span style={{ fontSize: 12.5, color: '#767a83' }}>{c.last}</span>
-            </button>
-          ))}
-        </ScrollX></div>
+      <OsPage title="جهات الاتصال" sub="سجل واحد لكل شخص — مربوط بكل معاينة وعقار." />
+      <OsTabs active={filter} onChange={(k) => set('f', k)} items={[['', 'الكل', base.length], ['unassigned', 'غير مخصّص', base.filter((c) => !c.agent_id).length], ['hot', 'ساخن', base.filter((c) => c.isHot).length]]} />
+      <div className="flex flex-wrap items-center gap-2 mb-2.5 text-[12.5px] text-ink-500">
+        <span>{list.length} جهة اتصال</span>
+        {qq && <button type="button" className="chip chip-sm on" onClick={() => set('q', '')}>«{sp.get('q')}»<Icon name="close" size={13} /></button>}
+      </div>
+      {list.length === 0 ? (
+        <OsEmpty icon="users" title="لا توجد جهات اتصال هنا" text={qq ? 'جرّب اسماً أو رقماً آخر.' : 'أضف عميلاً جديداً من الزر في الأعلى.'} action={qq ? <Btn size="sm" onClick={() => set('q', '')}>مسح البحث</Btn> : null} />
+      ) : (
+        <div className="os-card overflow-hidden"><div className="overflow-x-auto"><table className="os-tbl">
+          <thead><tr><th>الاسم</th><th>الهاتف</th><th>المصدر</th><th>مهتم بـ</th><th>الميزانية</th><th>المرحلة</th><th>الوسيط</th><th>آخر نشاط</th></tr></thead>
+          <tbody>
+            {list.map((c) => (
+              <tr key={c.id} className="cursor-pointer" onClick={() => nav(`/crm/contacts/${c.id}`)}>
+                <td><div className="min-w-[160px] flex items-center gap-2">{c.isHot && <span className="w-2 h-2 rounded-full bg-red flex-none" title="ساخن" />}<span className="font-semibold text-[13.5px] clamp-1">{c.name}</span></div></td>
+                <td className="whitespace-nowrap"><span className="mono text-[12.5px]" dir="ltr">{c.phone || '—'}</span></td>
+                <td className="whitespace-nowrap"><span className="text-[13px] text-ink-600">{c.source}</span></td>
+                <td><div className="min-w-[200px] max-w-[300px]"><Lmini l={c.listing} /></div></td>
+                <td className="whitespace-nowrap"><span className="num font-semibold" dir="ltr">{c.budgetText}</span></td>
+                <td><Badge tone={STAGE_TONE[c.stage]}>{c.stageLabel}</Badge></td>
+                <td><div className="min-w-[120px]"><Who agent={c.agent} /></div></td>
+                <td className="whitespace-nowrap text-ink-500 text-[12.5px]">{c.last}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table></div></div>
       )}
     </>
   );

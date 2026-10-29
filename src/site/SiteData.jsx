@@ -78,12 +78,14 @@ export function SiteDataProvider({ children }) {
         ppm: l.price && !l.hide_price && l.size ? money(Math.round(l.price / l.size)) + ' / م²' : '',
         payLabel: l.payment === 'installments' ? 'تقسيط' : l.payment === 'both' ? 'كاش أو تقسيط' : l.payment === 'cash' ? 'كاش' : l.furnishing || '',
         isInstall: l.payment === 'installments' || l.payment === 'both',
-        statusLabel: st[0], statusColor: st[1], statusBg: st[2],
+        statusLabel: l.status === 'sold' && l.deal === 'rent' ? 'مؤجّر' : st[0], statusColor: st[1], statusBg: st[2],
         plan: listingPlan(l, pr), href: `/property/${l.id}`, pos: posOf(l, a), hasPin: hasPos(l),
       };
     };
     const all = raw.listings.map(card);
     const live = all.filter((l) => l.status === 'live' || l.status === 'reserved');
+    const visible = all.filter((l) => l.status !== 'draft'); // everything shown on the site, incl. sold / rented (tagged)
+    const available = all.filter((l) => l.status === 'live'); // the 'available only' filter
 
     const proj = (p) => {
       const a = A[p.area_id] || {}, d = DV[p.developer_id] || {};
@@ -112,7 +114,7 @@ export function SiteDataProvider({ children }) {
     const homeAreas = (S.home_areas?.length ? S.home_areas.map((id) => areas.find((a) => a.id === id)).filter(Boolean) : areas).slice(0, 4);
     const featured = live.filter((l) => l.featured).sort((a, b) => (a.featured_rank ?? 99) - (b.featured_rank ?? 99));
     return {
-      ...base, settings: S, money, all, live, card, projs, areas, devs, homeAreas, featured,
+      ...base, settings: S, money, all, live, visible, available, card, projs, areas, devs, homeAreas, featured,
       byId: (id) => all.find((l) => l.id === id), projById: (id) => projs.find((p) => p.id === id), areaById: (id) => areas.find((a) => a.id === id),
       savedCards: saved.map((id) => all.find((l) => l.id === id)).filter(Boolean),
       showAgent: S.show_agent !== false, showId: S.show_listing_id !== false,
