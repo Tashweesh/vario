@@ -173,7 +173,6 @@ export default function SiteLayout() {
             <button type="button" className="icon-btn" aria-label="بحث" title="⌘K" onClick={() => setSearch(true)}><Icon name="search" size={20} /></button>
             <Link to="/compare" className="icon-btn relative hidden sm:inline-flex" aria-label="المقارنة"><Icon name="compare" size={20} /></Link>
             <Link to="/saved" className="icon-btn relative" aria-label="المحفوظات"><Icon name="heart" size={20} />{S.saved.length > 0 && <span className="badge-dot">{S.saved.length}</span>}</Link>
-            <button type="button" className="hidden md:inline-flex h-10 px-3 items-center text-[13px] font-semibold rounded-full hover:bg-paper-2" onClick={S.toggleCurrency} title="تغيير العملة">{S.currency === 'USD' ? 'USD' : 'دينار'}</button>
             <button type="button" className="h-10 px-3 inline-flex items-center gap-1.5 text-[13.5px] font-semibold rounded-full text-ink-400 cursor-default" title="النسخة الإنجليزية قريباً"><Icon name="globe" size={17} /><span className="hidden sm:inline">English</span><span className="sm:hidden">EN</span></button>
             <Link to="/contact" className="btn btn-ink btn-sm hidden xl:inline-flex ms-2"><Icon name="phone" size={16} />تواصل ويّا ڤايرو</Link>
             <button type="button" className="icon-btn lg:hidden" aria-label="القائمة" onClick={() => setMenu(true)}><Icon name="menu" size={22} /></button>
@@ -197,7 +196,7 @@ export default function SiteLayout() {
                 </Link>
               )}
             </div>
-            <div className="border-t hair"><div className="wrap py-3 flex items-center justify-between text-[13.5px]"><Link to={n.href} className="link">روح لـ{n.label}<Icon name="arrow" size={15} className="flip-rtl" /></Link><span className="lbl">كل الأسعار بالدولار، وتگدر تبدّلها للدينار من الأعلى</span></div></div>
+            <div className="border-t hair"><div className="wrap py-3 flex items-center justify-between text-[13.5px]"><Link to={n.href} className="link">روح لـ{n.label}<Icon name="arrow" size={15} className="flip-rtl" /></Link><span className="lbl">كل الأسعار بالدولار الأمريكي</span></div></div>
           </div>
         ))}
       </header>
@@ -305,9 +304,8 @@ function MobileMenu({ N, onClose, onSearch, S, wa, tel }) {
           ))}
         </div>
         <div className="py-4"><div className="eyebrow no-line mb-2">الأدوات</div><div className="grid grid-cols-2 gap-2">{TOOLS.map(([h, ic, t]) => it(h, ic, t))}</div></div>
-        <div className="grid grid-cols-2 gap-2 pb-6">
-          <button type="button" className="btn btn-line text-ink-400" title="قريباً"><Icon name="globe" size={17} />English</button>
-          <button type="button" className="btn btn-line" onClick={S.toggleCurrency}>{S.currency === 'USD' ? 'بالدينار' : 'بالدولار'}</button>
+        <div className="pb-6">
+          <button type="button" className="btn btn-line w-full text-ink-400" title="قريباً"><Icon name="globe" size={17} />English</button>
         </div>
       </div>
       <div className="p-4 border-t hair grid grid-cols-2 gap-2 flex-none">

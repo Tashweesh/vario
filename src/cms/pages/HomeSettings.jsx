@@ -18,7 +18,7 @@ export default function HomeSettings() {
   const init = useMemo(() => ({
     hero_kicker: S0.hero_kicker || '', hero_title: S0.hero_title || '', announcement: S0.announcement || '', show_agent: S0.show_agent !== false, show_listing_id: S0.show_listing_id !== false,
     sections: { types: true, featured: true, areas: true, tools: true, owners: true, ...(S0.sections || {}) }, home_areas: S0.home_areas || [], featured_project_id: S0.featured_project_id || '',
-    office_phone: S0.office_phone || '', office_whatsapp: S0.office_whatsapp || '', office_address: S0.office_address || '', office_hours: S0.office_hours || '', office_map_url: S0.office_map_url || '', iqd_rate: S0.iqd_rate || 1310,
+    office_phone: S0.office_phone || '', office_whatsapp: S0.office_whatsapp || '', office_address: S0.office_address || '', office_hours: S0.office_hours || '', office_map_url: S0.office_map_url || '',
   }), [S0]);
   const [f, setF] = useState(init);
   const [feat, setFeat] = useState(initFeatured);
@@ -32,7 +32,7 @@ export default function HomeSettings() {
   const publish = async () => {
     setBusy(true);
     try {
-      await q(supabase.from('site_settings').update({ ...f, announcement: f.announcement.trim() || null, featured_project_id: f.featured_project_id || null, iqd_rate: +f.iqd_rate || 1310 }).eq('id', 1));
+      await q(supabase.from('site_settings').update({ ...f, announcement: f.announcement.trim() || null, featured_project_id: f.featured_project_id || null }).eq('id', 1));
       if (JSON.stringify(feat) !== JSON.stringify(initFeatured)) await q(supabase.rpc('set_featured_order', { p_ids: feat }));
       await C.reload();
       toast('نُشرت التغييرات على الموقع');
@@ -115,7 +115,6 @@ export default function HomeSettings() {
               <Field label="العنوان"><input className={F} value={f.office_address} onChange={set('office_address')} /></Field>
               <Field label="ساعات الدوام" hint="تظهر في صفحة التواصل وصفحات العقارات"><input className={F} value={f.office_hours} onChange={set('office_hours')} placeholder="السبت – الخميس · 9:00 – 19:00" /></Field>
               <Field label="رابط الموقع على خرائط Google"><input className={`${F} mono`} dir="ltr" value={f.office_map_url} onChange={set('office_map_url')} placeholder="https://maps.google.com/?q=…" /></Field>
-              <Field label="سعر الصرف (دينار لكل دولار)"><input className={`${F} num`} type="number" min="1" dir="ltr" value={f.iqd_rate} onChange={set('iqd_rate')} /></Field>
             </div>
           </OsCard>
         </aside>

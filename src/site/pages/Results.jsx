@@ -85,7 +85,6 @@ export default function Results({ deal }) {
           <input className="field !h-11 !text-[14px] num" type="number" min="0" inputMode="numeric" placeholder="إلى" value={f.max} onChange={(e) => set('max', e.target.value)} />
           <span className="lbl whitespace-nowrap">{rent ? '$ / شهر' : 'USD'}</span>
         </div>
-        {S.currency === 'IQD' && <div className="lbl mt-2">الفلترة بالدولار</div>}
       </Group>
       <Group title="الحالة">
         <div className="flex flex-wrap gap-1.5"><Chip small on={!!f.avail} onClick={() => set('avail', '1')}><Icon name="check" size={14} />المتاحة فقط</Chip></div>

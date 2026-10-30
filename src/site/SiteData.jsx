@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { supabase } from '../lib/supabase.js';
-import { AMEN, PROJECT_TYPES, STATUS, TYPE_AR, listingFacts, listingPlan, listingTitle, num, usd } from '../lib/format.js';
+import { AMEN, PROJECT_TYPES, STATUS, TYPE_AR, listingFacts, listingPlan, listingTitle, usd } from '../lib/format.js';
 import { ERBIL, hasPos, toPos } from '../components/MapView.jsx';
 
 // Map position: the row's own pin, else its area's centre, else Erbil.
@@ -10,7 +10,6 @@ const Ctx = createContext(null);
 export const useSite = () => useContext(Ctx);
 
 const SAVED_KEY = 'vairo:saved';
-const CUR_KEY = 'vairo:currency';
 const readLS = (k, d) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } };
 const writeLS = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* private mode */ } };
 
@@ -18,7 +17,6 @@ export function SiteDataProvider({ children }) {
   const [raw, setRaw] = useState(null);
   const [error, setError] = useState(null);
   const [saved, setSaved] = useState(() => readLS(SAVED_KEY, []));
-  const [currency, setCurrency] = useState(() => readLS(CUR_KEY, 'USD'));
 
   const load = useCallback(async () => {
     try {
@@ -48,14 +46,12 @@ export function SiteDataProvider({ children }) {
   }, []);
 
   const toggleSave = useCallback((id) => setSaved((s) => { const n = s.includes(id) ? s.filter((x) => x !== id) : [...s, id]; writeLS(SAVED_KEY, n); return n; }), []);
-  const toggleCurrency = useCallback(() => setCurrency((c) => { const n = c === 'USD' ? 'IQD' : 'USD'; writeLS(CUR_KEY, n); return n; }), []);
 
   const value = useMemo(() => {
-    const base = { ready: !!raw, error, reload: load, saved, toggleSave, currency, toggleCurrency };
+    const base = { ready: !!raw, error, reload: load, saved, toggleSave };
     if (!raw) return base;
     const S = raw.settings;
-    const rate = S.iqd_rate || 1310;
-    const money = (n) => (currency === 'IQD' ? `${num(n * rate)} د.ع` : usd(n));
+    const money = (n) => usd(n); // USD is the only currency on the site
     const A = Object.fromEntries(raw.areas.map((a) => [a.id, a]));
     const DV = Object.fromEntries(raw.devs.map((d) => [d.id, d]));
     const PR = Object.fromEntries(raw.projects.map((p) => [p.id, p]));
@@ -119,7 +115,7 @@ export function SiteDataProvider({ children }) {
       savedCards: saved.map((id) => all.find((l) => l.id === id)).filter(Boolean),
       showAgent: S.show_agent !== false, showId: S.show_listing_id !== false,
     };
-  }, [raw, error, load, saved, toggleSave, currency, toggleCurrency]);
+  }, [raw, error, load, saved, toggleSave]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

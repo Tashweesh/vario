@@ -32,8 +32,8 @@ export default function Home() {
   const [f, setF] = useState({ q: '', type: '', max: '', pay: '' });
   const [bm, setBm] = useState('sale'); // explore-by-budget mode (reference: budget())
 
-  // short money for the budget bands: $100K / $1.2M in USD, full figure in IQD
-  const short = (v) => (S.currency === 'USD' ? '$' + (v >= 1e6 ? (v / 1e6).toFixed(2).replace(/\.?0+$/, '') + 'M' : v >= 1e4 ? Math.round(v / 1000) + 'K' : v) : S.money(v));
+  // short money for the budget bands: $100K / $1.2M
+  const short = (v) => '$' + (v >= 1e6 ? (v / 1e6).toFixed(2).replace(/\.?0+$/, '') + 'M' : v >= 1e4 ? Math.round(v / 1000) + 'K' : v);
   const rentShort = (v) => `${short(v)}/شهر`;
   const BANDS = bm === 'rent' ? [[0, 500], [500, 1000], [1000, 2000], [2000, Infinity]] : [[0, 100000], [100000, 200000], [200000, 400000], [400000, Infinity]];
   const bands = BANDS.map(([a, b], i) => {

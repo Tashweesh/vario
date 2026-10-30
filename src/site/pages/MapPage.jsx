@@ -75,7 +75,7 @@ export function MapExplorer({ embedded = false, height = 560 }) {
   const tool = useRef(null);
   const base = useRef(null);
 
-  const short = (v) => (S.currency === 'USD' ? '$' + (v >= 1e6 ? (v / 1e6).toFixed(2).replace(/\.?0+$/, '') + 'M' : v >= 1e4 ? Math.round(v / 1000) + 'K' : v) : S.money(v));
+  const short = (v) => '$' + (v >= 1e6 ? (v / 1e6).toFixed(2).replace(/\.?0+$/, '') + 'M' : v >= 1e4 ? Math.round(v / 1000) + 'K' : v);
   const bandLabel = ([a, b]) => ISO(!a ? `أقل من ${short(b)}` : !b ? `${short(a)}+` : `${short(a)}–${short(b)}`) + (deal === 'rent' ? '/شهر' : '');
   const zoneName = (z) => (ZONES.find((x) => x[0] === z) || [])[1] || '';
   const areaZone = (id) => { const a = S.areaById(id); return a ? zoneOf(a) : ''; };
