@@ -96,6 +96,20 @@ function UserModal({ u, onClose }) {
     if (!file) return;
     try { const up = await uploadMedia(file, 'team'); setF((s) => ({ ...s, img: up.url })); } catch (err) { toast(err.message, 'error'); }
   };
+  const isMe = u.id === A.me.agent_id;
+  const remove = async () => {
+    if (!window.confirm(`حذف ${u.name} نهائياً؟ يُحذف حسابه ولا يگدر يدخل بعد، وتبقى عقاراته وعملاؤه بدون وسيط.`)) return;
+    setBusy(true);
+    try {
+      await q(supabase.rpc('delete_staff_user', { p_agent_id: u.id }));
+      await C.reload();
+      toast('حُذف المستخدم');
+      onClose();
+    } catch (err) {
+      toast(err.message, 'error');
+      await C.reload();
+    } finally { setBusy(false); }
+  };
   return (
     <Modal title={isNew ? 'دعوة مستخدم' : `تعديل ${u.name}`} sub={isNew ? 'يستلم الدعوة على بريده ويفعّل حسابه من صفحة الدخول' : u.staff?.email} onClose={onClose} width={560}>
       <form onSubmit={save} className="grid sm:grid-cols-2 gap-4">
@@ -112,10 +126,13 @@ function UserModal({ u, onClose }) {
         </Field>
         {!isNew && (
           <SwRow className="sm:col-span-2 border-t hair pt-3" label="الحساب مفعّل" sub="الإيقاف يمنع الدخول ويخفيه من الموقع، وتبقى عقاراته وعملاؤه">
-            <Toggle on={f.active} label="الحساب مفعّل" onChange={set('active')} disabled={u.id === A.me.agent_id} />
+            <Toggle on={f.active} label="الحساب مفعّل" onChange={set('active')} disabled={isMe} />
           </SwRow>
         )}
-        <div className="sm:col-span-2 flex justify-end pt-3 border-t hair"><Btn type="submit" kind="red" size="sm" disabled={busy}><Icon name={isNew ? 'mail' : 'check'} size={15} />{isNew ? 'إرسال الدعوة' : 'حفظ'}</Btn></div>
+        <div className="sm:col-span-2 flex items-center justify-between gap-3 pt-3 border-t hair">
+          {!isNew && !isMe ? <Btn kind="ghost" size="sm" className="!text-red-700" disabled={busy} onClick={remove}><Icon name="trash" size={15} />حذف المستخدم</Btn> : <span />}
+          <Btn type="submit" kind="red" size="sm" disabled={busy}><Icon name={isNew ? 'mail' : 'check'} size={15} />{isNew ? 'إرسال الدعوة' : 'حفظ'}</Btn>
+        </div>
       </form>
     </Modal>
   );

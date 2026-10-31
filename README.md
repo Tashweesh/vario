@@ -100,6 +100,9 @@ user must be in the `docker` group.
   links only public listings, auto-assigns the listing's agent, logs a «طلب من الموقع» activity and bumps the listing's lead count.
 - `track_listing_view(id)` counts property page views (once per browser session).
 - Deactivating a team member removes all their database access immediately; the last active admin cannot be demoted or removed.
+- Admins can also delete a team member outright (`delete_staff_user(agent_id)`): the profile, staff row and auth account go away
+  and the person can no longer sign in, while their listings, contacts, activities and viewings are kept and become unassigned.
+  Admins cannot delete themselves.
 - **«إظهار الوسيط المسؤول»** (CMS → الرئيسية وإعدادات الموقع) hides agent profiles at the database level; property pages then show «فريق ڤايرو» and the office number.
 - Listing IDs are generated automatically (`VS-…` for sale, `VR-…` for rent).
 

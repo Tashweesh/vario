@@ -267,6 +267,25 @@ describe('admin role', () => {
     assert.equal((await ok(u.from('contacts').select('id'))).length, 0, 'deactivated user loses CRM access');
     await ok(admin.from('agents').delete().eq('id', g.id));
   });
+  test('delete_staff_user removes the profile and the login (admin only, not self, not the last admin)', async () => {
+    const g = await ok(admin.from('agents').insert({ name: 'موظف مؤقت', title: 'وسيط' }).select().single());
+    await ok(admin.from('staff').insert({ agent_id: g.id, email: 'temp.agent@vairo.iq', role: 'agent' }));
+    const u = client();
+    assert.ifError((await u.auth.signUp({ email: 'temp.agent@vairo.iq', password: 'secret-123' })).error);
+    assert.equal((await ok(u.rpc('me')))[0].agent_id, g.id);
+    const l = await ok(admin.from('listings').insert({ deal: 'sale', type: 'land', area_id: 'kirkuk', size: 100, price: 1000, agent_id: g.id }).select('id').single());
+    await fails(editor.rpc('delete_staff_user', { p_agent_id: g.id }), /مصرّح/);
+    await fails(agent.rpc('delete_staff_user', { p_agent_id: g.id }), /مصرّح/);
+    await fails(admin.rpc('delete_staff_user', { p_agent_id: 'alan' }), /حسابك|مدير/);
+    await fails(admin.rpc('delete_staff_user', { p_agent_id: 'nope' }), /غير موجود/);
+    await ok(admin.rpc('delete_staff_user', { p_agent_id: g.id }));
+    assert.equal((await ok(admin.from('agents').select('id').eq('id', g.id))).length, 0);
+    assert.equal((await ok(admin.from('staff').select('agent_id').eq('agent_id', g.id))).length, 0);
+    assert.equal((await ok(admin.from('listings').select('agent_id').eq('id', l.id)))[0].agent_id, null, 'listing is kept, unassigned');
+    const again = await client().auth.signInWithPassword({ email: 'temp.agent@vairo.iq', password: 'secret-123' });
+    assert.ok(again.error, 'the deleted account can no longer sign in');
+    await ok(admin.from('listings').delete().eq('id', l.id));
+  });
   test('an un-invited signup gets no access', async () => {
     const u = client();
     assert.ifError((await u.auth.signUp({ email: `stranger${Date.now()}@example.com`, password: 'secret-123' })).error);
