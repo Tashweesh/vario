@@ -94,14 +94,17 @@ export function SiteDataProvider({ children }) {
       };
     };
     const projs = raw.projects.map(proj);
-    const maxPpm = Math.max(1, ...raw.areas.map((a) => a.ppm));
+    // Area buying price (USD/m²): average price ÷ size of the sale listings on the market in that area; falls back to the stored value.
+    const ppmOf = (a) => { const s = live.filter((l) => l.area_id === a.id && l.deal === 'sale' && l.price > 0 && l.size > 0 && !l.hide_price); return s.length ? Math.round(s.reduce((t, l) => t + l.price / l.size, 0) / s.length) : a.ppm; };
+    const maxPpm = Math.max(1, ...raw.areas.map(ppmOf));
     const DNA = { family: 'للعوائل', convenience: 'قرب الخدمات', green: 'مساحات خضراء', dining: 'مطاعم ومقاهي', growth: 'نمو', quiet: 'هدوء' };
     const areas = raw.areas.map((a) => {
       const ls = live.filter((l) => l.area_id === a.id);
+      const ppm = ppmOf(a);
       return {
-        ...a, desc: a.description, ppmText: money(a.ppm), rentText: '$' + Number(a.rent) + ' / م² شهرياً',
+        ...a, ppm, desc: a.description, ppmText: money(ppm), rentText: '$' + Number(a.rent) + ' / م² شهرياً',
         saleCount: ls.filter((l) => l.deal === 'sale').length, rentCount: ls.filter((l) => l.deal === 'rent').length, total: ls.length,
-        pos: posOf(a), barW: Math.round((a.ppm / maxPpm) * 100) + '%',
+        pos: posOf(a), barW: Math.round((ppm / maxPpm) * 100) + '%',
         dnaRows: Object.entries(DNA).map(([k, lab]) => ({ lab, v: a.dna?.[k] ?? 0, w: (a.dna?.[k] ?? 0) * 10 + '%' })),
         listings: ls, projs: projs.filter((p) => p.area_id === a.id), href: `/areas/${a.id}`,
       };
