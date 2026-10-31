@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { supabase, friendlyError } from '../lib/supabase.js';
+import { supabase, friendlyError, updatePassword } from '../lib/supabase.js';
 import { useAuth } from '../lib/auth.jsx';
 import { useDocTitle } from '../lib/hooks.js';
 import { Btn, Icon, Logo, Spinner, useToast } from '../components/ui.jsx';
@@ -33,11 +33,15 @@ export default function Login() {
     if (f.password !== f.password2) return toast('كلمتا السر غير متطابقتين', 'error');
     setBusy(true);
     try {
-      const { error } = await supabase.auth.updateUser({ password: f.password });
-      if (error) throw error;
+      const token = A.session?.access_token;
+      if (!token) throw new Error('انتهت صلاحية الجلسة — افتح رابط إعادة التعيين من جديد');
+      await updatePassword(token, f.password);
       toast('تم تغيير كلمة المرور');
       setF({ email: '', password: '', password2: '' });
       setRecovery(false);
+      // the account is already signed in with a still-valid session; refreshMe lets the
+      // redirect effect send staff into their workspace (or show "not activated" otherwise).
+      A.refreshMe?.();
       nav('/login', { replace: true });
     } catch (err) { toast(friendlyError(err), 'error'); } finally { setBusy(false); }
   };
