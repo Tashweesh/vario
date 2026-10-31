@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { useCms } from '../CmsApp.jsx';
 import { supabase, q, uploadMedia } from '../../lib/supabase.js';
-import { useDocTitle } from '../../lib/hooks.js';
+import { useDocTitle, useSearchQuery } from '../../lib/hooks.js';
 import { usd } from '../../lib/format.js';
 import { Btn, Field, Icon, Img, Modal, useToast } from '../../components/ui.jsx';
 import { ERBIL, LocationPicker } from '../../components/MapView.jsx';
-import { Lmini, OsEmpty, OsTable, PageTitle } from '../../staff/Shell.jsx';
+import { Lmini, OsEmpty, OsTable, PageTitle, SearchChip } from '../../staff/Shell.jsx';
 
 const DNA = { family: 'للعوائل', convenience: 'قرب الخدمات', green: 'مساحات خضراء', dining: 'مطاعم ومقاهي', growth: 'نمو', quiet: 'هدوء' };
 const F = 'field !h-10 !text-[13.5px]';
@@ -16,12 +16,16 @@ export default function Areas() {
   const C = useCms();
   const [edit, setEdit] = useState(null);
   const live = C.listings.filter((l) => l.status === 'live' || l.status === 'reserved');
+  const S = useSearchQuery();
+  const list = C.areas.filter((a) => S.hit(a.id, a.name, a.short, a.vibe, (a.tags || []).join(' ')));
   return (
     <>
       <PageTitle sub={`${C.areas.length} منطقة بالموقع — الأسماء والأوصاف ومؤشرات الأسعار و«هوية المنطقة»`} action={<><a href="/areas" target="_blank" rel="noreferrer" className="btn btn-line btn-sm"><Icon name="globe" size={15} />المناطق بالموقع</a><Btn kind="red" size="sm" onClick={() => setEdit({})}><Icon name="plus" size={15} />منطقة</Btn></>}>المناطق</PageTitle>
-      {C.areas.length === 0 ? <OsEmpty icon="compass" title="لا توجد مناطق بعد">أضف أول منطقة حتى تربط بيها العقارات.</OsEmpty> : (
+      <SearchChip S={S} count={list.length} unit="منطقة" />
+      {C.areas.length === 0 ? <OsEmpty icon="compass" title="لا توجد مناطق بعد">أضف أول منطقة حتى تربط بيها العقارات.</OsEmpty>
+      : list.length === 0 ? <OsEmpty icon="compass" title="ماكو مناطق تطابق" action={<Btn size="sm" onClick={S.clear}>مسح البحث</Btn>}>جرّب اسماً أو معرّفاً آخر.</OsEmpty> : (
         <OsTable head={['المنطقة', { label: 'مؤشر السعر', cls: 'num' }, { label: 'ظاهر بيع / إيجار', cls: 'num' }, '']}>
-          {C.areas.map((a) => (
+          {list.map((a) => (
             <tr key={a.id} className="cursor-pointer" onClick={() => setEdit(a)}>
               <td><div className="min-w-[220px]"><Lmini img={a.img} title={a.name} id={a.id} sub={a.vibe} /></div></td>
               <td className="num whitespace-nowrap"><span dir="ltr">{usd(a.ppm)}</span><span className="text-ink-400">/م²</span><span className="block text-[11.5px] text-ink-500"><span dir="ltr">${(+a.rent || 0).toFixed(1)}</span>/م²/شهر</span></td>

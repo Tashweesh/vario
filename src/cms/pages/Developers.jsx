@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useCms } from '../CmsApp.jsx';
 import { supabase, q } from '../../lib/supabase.js';
-import { useDocTitle } from '../../lib/hooks.js';
+import { useDocTitle, useSearchQuery } from '../../lib/hooks.js';
 import { Btn, Field, Icon, Modal, useToast } from '../../components/ui.jsx';
-import { OsEmpty, OsTable, PageTitle } from '../../staff/Shell.jsx';
+import { OsEmpty, OsTable, PageTitle, SearchChip } from '../../staff/Shell.jsx';
 
 const EMPTY = { name: '', mono: '', founded: '', focus: '', delivered: 0, units: 0, description: '', phone: '', email: '' };
 const F = 'field !h-10 !text-[13.5px]';
@@ -13,12 +13,16 @@ export default function Developers() {
   useDocTitle('المطوّرون');
   const C = useCms();
   const [edit, setEdit] = useState(null);
+  const S = useSearchQuery();
+  const list = C.devs.filter((d) => S.hit(d.name, d.mono, d.focus, d.phone, d.email));
   return (
     <>
       <PageTitle sub="ملفات المطوّرين بالموقع — عدّل الملف وشوف مشاريعهم" action={<><a href="/developers" target="_blank" rel="noreferrer" className="btn btn-line btn-sm"><Icon name="globe" size={15} />المطوّرون بالموقع</a><Btn kind="red" size="sm" onClick={() => setEdit({ ...EMPTY })}><Icon name="plus" size={15} />مطوّر جديد</Btn></>}>المطوّرون</PageTitle>
-      {C.devs.length === 0 ? <OsEmpty icon="briefcase" title="لا يوجد مطوّرون بعد">أضف أول مطوّر حتى تربطه بالمشاريع.</OsEmpty> : (
+      <SearchChip S={S} count={list.length} unit="مطوّر" />
+      {C.devs.length === 0 ? <OsEmpty icon="briefcase" title="لا يوجد مطوّرون بعد">أضف أول مطوّر حتى تربطه بالمشاريع.</OsEmpty>
+      : list.length === 0 ? <OsEmpty icon="briefcase" title="ماكو مطوّرون يطابقون" action={<Btn size="sm" onClick={S.clear}>مسح البحث</Btn>}>جرّب اسماً أو تخصصاً آخر.</OsEmpty> : (
         <OsTable head={['المطوّر', 'التخصص', { label: 'مشاريع', cls: 'num' }, 'الهاتف', 'البريد', '']}>
-          {C.devs.map((d) => (
+          {list.map((d) => (
             <tr key={d.id} className="cursor-pointer" onClick={() => setEdit(d)}>
               <td><span className="flex items-center gap-2.5 min-w-[200px]"><span className="w-9 h-9 rounded-[10px] bg-paper-2 border hair inline-flex items-center justify-center text-[11px] font-bold tracking-wider flex-none" dir="ltr">{d.mono}</span><span className="min-w-0"><span className="block text-[13px] font-semibold clamp-1">{d.name}</span><span className="block text-[11.5px] text-ink-500 clamp-1">{d.founded ? `منذ ${d.founded} · ` : ''}{d.delivered} مشروع مسلّم</span></span></span></td>
               <td className="text-[13px]">{d.focus}</td>

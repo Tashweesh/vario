@@ -2,10 +2,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useCms } from '../CmsApp.jsx';
 import { supabase, q, uploadMedia } from '../../lib/supabase.js';
-import { useDocTitle } from '../../lib/hooks.js';
+import { useDocTitle, useSearchQuery } from '../../lib/hooks.js';
 import { AMEN, PROJECT_TYPES, usd, handoverText, isIsoDate } from '../../lib/format.js';
 import { Btn, Field, Icon, Img, Spinner, Toggle, useToast } from '../../components/ui.jsx';
-import { Kpi, Lmini, Osb, OsCard, OsEmpty, OsTable, PageTitle, SwRow } from '../../staff/Shell.jsx';
+import { Kpi, Lmini, Osb, OsCard, OsEmpty, OsTable, PageTitle, SearchChip, SwRow } from '../../staff/Shell.jsx';
 import { LocationPicker } from '../../components/MapView.jsx';
 
 const F = 'field !h-10 !text-[13.5px]';
@@ -16,6 +16,8 @@ export function ProjectsList() {
   const C = useCms();
   const nav = useNavigate();
   const constr = C.projects.filter((p) => p.status === 'construction').length;
+  const S = useSearchQuery();
+  const list = C.projects.filter((p) => S.hit(p.id, p.name, p.devName, p.areaName, p.typeAr));
   return (
     <>
       <PageTitle sub="الأبراج والمجمعات بالموقع — عدّل اللي يقراه الزبون، اخفي أو ميّز مشروع" action={<><a href="/projects" target="_blank" rel="noreferrer" className="btn btn-line btn-sm"><Icon name="globe" size={15} />المشاريع بالموقع</a><Btn kind="red" size="sm" onClick={() => nav('/cms/projects/new')}><Icon name="plus" size={15} />مشروع جديد</Btn></>}>المشاريع</PageTitle>
@@ -24,9 +26,11 @@ export function ProjectsList() {
         <Kpi label="عقارات مرتبطة بمشاريع" value={C.projects.reduce((a, p) => a + p.unitCount, 0)} icon="building" to="/cms/listings" />
         <Kpi label="مخفي من الموقع" value={C.projects.filter((p) => !p.published).length} sub="ما يظهر بصفحة المشاريع" icon="eye" />
       </div>
-      {C.projects.length === 0 ? <OsEmpty icon="compound" title="لا توجد مشاريع بعد" action={<Btn kind="dark" size="sm" onClick={() => nav('/cms/projects/new')}>مشروع جديد</Btn>}>أضف أول مشروع حتى يظهر بصفحة المشاريع.</OsEmpty> : (
+      <SearchChip S={S} count={list.length} unit="مشروع" />
+      {C.projects.length === 0 ? <OsEmpty icon="compound" title="لا توجد مشاريع بعد" action={<Btn kind="dark" size="sm" onClick={() => nav('/cms/projects/new')}>مشروع جديد</Btn>}>أضف أول مشروع حتى يظهر بصفحة المشاريع.</OsEmpty>
+      : list.length === 0 ? <OsEmpty icon="compound" title="ماكو مشاريع تطابق" action={<Btn size="sm" onClick={S.clear}>مسح البحث</Btn>}>جرّب اسم مشروع أو مطوّر أو منطقة أخرى.</OsEmpty> : (
         <OsTable head={['المشروع', 'المطوّر', 'المنطقة', 'الإنجاز', { label: 'الوحدات', cls: 'num' }, 'الحالة', '']}>
-          {C.projects.map((p) => (
+          {list.map((p) => (
             <tr key={p.id} className="cursor-pointer" onClick={() => nav(`/cms/projects/${p.id}`)}>
               <td><div className="min-w-[220px] flex items-center gap-2"><Lmini img={p.img} title={p.name} sub={`${p.typeAr} · ${p.floors} طابق`} />{!p.published && <Osb tone="amber">مخفي</Osb>}</div></td>
               <td className="text-[13px]">{p.devName || <span className="text-ink-400">بانتظار التأكيد</span>}</td>

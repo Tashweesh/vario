@@ -2,10 +2,10 @@ import { useState } from 'react';
 import { useCms } from '../CmsApp.jsx';
 import { useAuth } from '../../lib/auth.jsx';
 import { supabase, q, uploadMedia } from '../../lib/supabase.js';
-import { useDocTitle } from '../../lib/hooks.js';
+import { useDocTitle, useSearchQuery } from '../../lib/hooks.js';
 import { ROLE_AR } from '../../lib/format.js';
 import { Btn, Field, Icon, Modal, Toggle, useToast } from '../../components/ui.jsx';
-import { Av, Osb, OsCard, OsTable, PageTitle, SwRow } from '../../staff/Shell.jsx';
+import { Av, Osb, OsCard, OsEmpty, OsTable, PageTitle, SearchChip, SwRow } from '../../staff/Shell.jsx';
 
 const F = 'field !h-10 !text-[13.5px]';
 
@@ -21,13 +21,17 @@ export default function Users() {
     try { await q(supabase.from('staff').update({ role }).eq('agent_id', agentId)); await C.reload(); toast('تم تغيير الدور'); if (agentId === A.me.agent_id) A.refreshMe(); } catch (e) { toast(e.message, 'error'); }
   };
   const active = C.agents.filter((g) => g.active).length;
+  const S = useSearchQuery();
+  const list = C.agents.filter((g) => S.hit(g.name, g.phone, g.title, staff[g.id]?.email));
   return (
     <>
       <PageTitle sub={`${active} فعّال · ${C.agents.length - active} موقوف · ${C.staff.filter((s) => !s.user_id).length} بانتظار التفعيل`} action={<Btn kind="red" size="sm" onClick={() => setEdit({})}><Icon name="plus" size={15} />دعوة مستخدم</Btn>}>المستخدمون والصلاحيات</PageTitle>
       <div className="os-cols">
         <div className="min-w-0">
+          <SearchChip S={S} count={list.length} unit="مستخدم" />
+          {list.length === 0 ? <OsEmpty icon="users" title="ماكو مستخدمون يطابقون" action={<Btn size="sm" onClick={S.clear}>مسح البحث</Btn>}>جرّب اسماً أو هاتفاً أو بريداً آخر.</OsEmpty> : (
           <OsTable head={['الاسم', 'الهاتف', 'الدور', { label: 'عقارات', cls: 'num' }, { label: 'عملاء', cls: 'num' }, '']}>
-            {C.agents.map((g) => {
+            {list.map((g) => {
               const s = staff[g.id];
               return (
                 <tr key={g.id} style={{ opacity: g.active ? 1 : 0.5 }}>
@@ -44,7 +48,7 @@ export default function Users() {
                 </tr>
               );
             })}
-          </OsTable>
+          </OsTable>)}
         </div>
         <aside className="os-aside grid gap-5 min-w-0">
           <OsCard title="الأدوار" sub="شنو يگدر يسوي كل دور">

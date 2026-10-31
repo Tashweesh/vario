@@ -1,11 +1,11 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { Navigate, Route, Routes, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { Navigate, Route, Routes, useNavigate } from 'react-router-dom';
 import { supabase, q } from '../lib/supabase.js';
 import { useAuth } from '../lib/auth.jsx';
 import { SOURCES, STAGE_AR, TYPE_AR, VIEWING_STATUS, ago, listingTitle, usd } from '../lib/format.js';
 import { Btn, Field, Icon, Img, Modal, Spinner, useToast } from '../components/ui.jsx';
 import { Crumbs } from '../site/parts.jsx';
-import { Shell, StaffGate } from '../staff/Shell.jsx';
+import { Shell, StaffGate, useScopedSearch } from '../staff/Shell.jsx';
 import Pipeline from './pages/Pipeline.jsx';
 import Contacts from './pages/Contacts.jsx';
 import ContactDetail from './pages/ContactDetail.jsx';
@@ -276,11 +276,13 @@ export function ViewingModal({ v, preset = {}, onClose }) {
   );
 }
 
+// The CRM's only directory is contacts, so the top-bar search lands there from every page.
+const CRM_SEARCH = [{ to: '/crm/contacts', placeholder: 'ابحث باسم العميل أو رقم الهاتف أو البريد…' }];
+
 function CrmShell() {
   const R = useCrm();
   const nav = useNavigate();
-  const loc = useLocation();
-  const [sp] = useSearchParams();
+  const search = useScopedSearch(CRM_SEARCH);
   const [modal, setModal] = useState(null);
   const newCount = R.contacts.filter((c) => c.stage === 'new').length;
   const items = [
@@ -290,9 +292,7 @@ function CrmShell() {
     { to: '/crm/reports', label: 'التقارير' },
   ];
   return (
-    <Shell sub="CRM" items={items} switchTo={{ to: '/cms', label: 'إدارة المحتوى' }}
-      search={loc.pathname === '/crm/contacts' ? sp.get('q') || '' : ''} searchPlaceholder="ابحث بالاسم أو الهاتف…"
-      onSearch={(qq) => nav(`/crm/contacts${qq ? '?q=' + encodeURIComponent(qq) : ''}`)}
+    <Shell sub="CRM" items={items} switchTo={{ to: '/cms', label: 'إدارة المحتوى' }} {...search}
       actions={<>
         <Btn size="sm" onClick={() => setModal('viewing')}><Icon name="cal" size={16} />معاينة</Btn>
         <Btn kind="red" size="sm" onClick={() => setModal('contact')}><Icon name="plus" size={16} />عميل جديد</Btn>

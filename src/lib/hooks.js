@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 
 export function useViewport() {
   const [w, setW] = useState(() => window.innerWidth);
@@ -27,4 +28,19 @@ export function useLayout() {
 
 export function useDocTitle(t) {
   useEffect(() => { document.title = t ? `${t} · VAIRO` : 'VAIRO · عقارات أربيل'; }, [t]);
+}
+
+// The `?q=` the staff top bar writes: normalized text, digits (for phone matching), and a tester for a row's fields.
+export function useSearchQuery() {
+  const [sp, setSp] = useSearchParams();
+  const raw = sp.get('q') || '';
+  const q = raw.trim().toLowerCase();
+  const digits = q.replace(/\D/g, '');
+  const hit = (...fields) => {
+    if (!q) return true;
+    const hay = fields.filter(Boolean).join(' ').toLowerCase();
+    return hay.includes(q) || (digits.length >= 3 && hay.replace(/\D/g, '').includes(digits));
+  };
+  const clear = () => { const n = new URLSearchParams(sp); n.delete('q'); setSp(n, { replace: true }); };
+  return { q, raw, hit, clear };
 }

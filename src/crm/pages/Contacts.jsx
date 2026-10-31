@@ -13,7 +13,7 @@ export default function Contacts() {
   const qq = (sp.get('q') || '').trim().toLowerCase();
   const qDigits = qq.replace(/\D/g, '');
   const set = (k, v) => { const n = new URLSearchParams(sp); if (!v) n.delete(k); else n.set(k, v); setSp(n, { replace: true }); };
-  const base = R.contacts.filter((c) => !qq || c.name.toLowerCase().includes(qq) || (qDigits.length >= 3 && (c.phone || '').replace(/\D/g, '').includes(qDigits)));
+  const base = R.contacts.filter((c) => !qq || c.name.toLowerCase().includes(qq) || (c.email || '').toLowerCase().includes(qq) || (qDigits.length >= 3 && (c.phone || '').replace(/\D/g, '').includes(qDigits)));
   const list = base.filter((c) => (filter === 'unassigned' ? !c.agent_id : filter === 'hot' ? c.isHot : true));
   return (
     <>
@@ -24,7 +24,7 @@ export default function Contacts() {
         {qq && <button type="button" className="chip chip-sm on" onClick={() => set('q', '')}>«{sp.get('q')}»<Icon name="close" size={13} /></button>}
       </div>
       {list.length === 0 ? (
-        <OsEmpty icon="users" title="لا توجد جهات اتصال هنا" text={qq ? 'جرّب اسماً أو رقماً آخر.' : 'أضف عميلاً جديداً من الزر في الأعلى.'} action={qq ? <Btn size="sm" onClick={() => set('q', '')}>مسح البحث</Btn> : null} />
+        <OsEmpty icon="users" title="لا توجد جهات اتصال هنا" text={qq ? 'جرّب اسماً أو رقماً أو بريداً آخر.' : 'أضف عميلاً جديداً من الزر في الأعلى.'} action={qq ? <Btn size="sm" onClick={() => set('q', '')}>مسح البحث</Btn> : null} />
       ) : (
         <div className="os-card overflow-hidden"><div className="overflow-x-auto"><table className="os-tbl">
           <thead><tr><th>الاسم</th><th>الهاتف</th><th>المصدر</th><th>مهتم بـ</th><th>الميزانية</th><th>المرحلة</th><th>الوسيط</th><th>آخر نشاط</th></tr></thead>

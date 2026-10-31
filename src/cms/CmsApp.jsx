@@ -1,10 +1,10 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { Navigate, Route, Routes, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { Navigate, Route, Routes, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase.js';
 import { useAuth } from '../lib/auth.jsx';
 import { STATUS, TYPE_AR, listingFacts, listingTitle, usd, PROJECT_TYPES } from '../lib/format.js';
 import { Btn, Icon, Spinner } from '../components/ui.jsx';
-import { OsEmpty, Shell, StaffGate } from '../staff/Shell.jsx';
+import { OsEmpty, Shell, StaffGate, useScopedSearch } from '../staff/Shell.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import Listings from './pages/Listings.jsx';
 import ListingEditor from './pages/ListingEditor.jsx';
@@ -68,12 +68,20 @@ function CmsDataProvider({ children }) {
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 
+// What the top-bar search looks through on each section (editors inherit their list's scope); everything else searches listings.
+const CMS_SEARCH = [
+  { to: '/cms/listings', placeholder: 'ابحث باسم العقار أو رقمه أو موقعه…' },
+  { to: '/cms/projects', placeholder: 'ابحث باسم المشروع أو المطوّر أو المنطقة…' },
+  { to: '/cms/developers', placeholder: 'ابحث عن مطوّر بالاسم أو التخصص…' },
+  { to: '/cms/areas', placeholder: 'ابحث عن منطقة بالاسم أو المعرّف…' },
+  { to: '/cms/users', placeholder: 'ابحث عن مستخدم بالاسم أو الهاتف أو البريد…' },
+];
+
 function CmsShell() {
   const A = useAuth();
   const C = useCms();
   const nav = useNavigate();
-  const loc = useLocation();
-  const [sp] = useSearchParams();
+  const search = useScopedSearch(CMS_SEARCH);
   const items = [
     { to: '/cms', label: 'لوحة التحكم', icon: 'sparkle' },
     { section: 'المحتوى' },
@@ -89,11 +97,8 @@ function CmsShell() {
       { to: '/cms/users', label: 'المستخدمون والصلاحيات', icon: 'users' },
     ] : []),
   ];
-  const onListings = loc.pathname === '/cms/listings';
   return (
-    <Shell sub="إدارة المحتوى" items={items} switchTo={{ to: '/crm', label: 'الانتقال إلى CRM' }}
-      search={onListings ? sp.get('q') || '' : ''} searchPlaceholder="ابحث برقم العقار أو الاسم…"
-      onSearch={(q) => nav(`/cms/listings${q ? '?q=' + encodeURIComponent(q) : ''}`)}
+    <Shell sub="إدارة المحتوى" items={items} switchTo={{ to: '/crm', label: 'الانتقال إلى CRM' }} {...search}
       actions={<>
         <Btn size="sm" className="hidden sm:inline-flex" onClick={() => nav('/')}><Icon name="globe" size={15} />عرض الموقع</Btn>
         <Btn kind="red" size="sm" className="hidden sm:inline-flex" onClick={() => nav('/cms/listings/new')}><Icon name="plus" size={16} />عقار جديد</Btn>

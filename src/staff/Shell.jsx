@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../lib/auth.jsx';
 import { ROLE_AR, STATUS } from '../lib/format.js';
-import { Icon, Img, LogoMark, Spinner } from '../components/ui.jsx';
+import { Chip, Icon, Img, LogoMark, Spinner } from '../components/ui.jsx';
 
 // Staff shell ported from the design reference (os/shell.js): workspace rail · section sidebar · top bar · body,
 // plus the mobile bottom bar and menu drawer. UI kit classes come from src/ref.css (os-card, os-tbl, osb, os-tab …).
@@ -64,6 +64,36 @@ function UserMenu({ me, A, nav, children, className = '', up = false }) {
     </div>
   );
 }
+
+// Route-scoped top-bar search. scopes: [{ to, placeholder }] — the first scope whose `to` prefixes the current path wins
+// (so /cms/projects/:id still searches projects); pages without a scope of their own fall back to `fallback`.
+// Submitting writes `?q=` on the scope's list page, keeping that page's other filters when already there.
+export function useScopedSearch(scopes, fallback = scopes[0]) {
+  const loc = useLocation();
+  const nav = useNavigate();
+  const [sp] = useSearchParams();
+  const scope = scopes.find((s) => loc.pathname === s.to || loc.pathname.startsWith(s.to + '/')) || fallback;
+  const onPage = loc.pathname === scope.to;
+  return {
+    search: onPage ? sp.get('q') || '' : '',
+    searchPlaceholder: scope.placeholder,
+    onSearch: (q) => {
+      const p = new URLSearchParams(onPage ? loc.search : '');
+      const v = (q || '').trim();
+      if (v) p.set('q', v); else p.delete('q');
+      const qs = p.toString();
+      nav(scope.to + (qs ? '?' + qs : ''));
+    },
+  };
+}
+
+// Result count + active «query» chip under a page title; clears the top-bar search in place. S = useSearchQuery().
+export const SearchChip = ({ S, count, unit }) => (
+  <div className="flex flex-wrap items-center gap-2 mb-2.5 text-[12.5px] text-ink-500">
+    <span className="num">{count} {unit}</span>
+    {S.q && <Chip small on onClick={S.clear} aria-label="مسح البحث">«{S.raw}»<Icon name="close" size={13} /></Chip>}
+  </div>
+);
 
 // Sidebar + top bar shared by the CMS and the CRM.
 // items: [{ to, label, icon?, match?, badge?, count?, section? }]
@@ -153,7 +183,7 @@ export function Shell({ sub, items, switchTo, search, onSearch, searchPlaceholde
           {onSearch && (
             <form onSubmit={(e) => { e.preventDefault(); onSearch(new FormData(e.currentTarget).get('q')); }} className="flex-1 max-w-[440px] h-10 px-3.5 rounded-[12px] bg-paper-2 border hair text-ink-500 text-[13.5px] flex items-center gap-2.5 focus-within:border-ink md:ms-4 min-w-0" role="search">
               <Icon name="search" size={17} />
-              <input name="q" key={search} defaultValue={search} placeholder={searchPlaceholder} aria-label="بحث" className="flex-1 min-w-0 bg-transparent outline-none text-ink text-[13.5px]" />
+              <input name="q" key={`${loc.pathname}|${search}`} defaultValue={search} placeholder={searchPlaceholder} aria-label="بحث" className="flex-1 min-w-0 bg-transparent outline-none text-ink text-[13.5px]" />
               <span className="ms-auto mono text-[11px] hidden md:inline">↵</span>
             </form>
           )}
