@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCrm, ViewingModal, Av, Badge, DEAL_AR, OsPage } from '../CrmApp.jsx';
 import { useAuth } from '../../lib/auth.jsx';
@@ -39,6 +39,14 @@ export default function Pipeline() {
   };
   const openViewing = (e, id) => { e.stopPropagation(); setViewingFor(id); };
 
+  // Column paging: two arrows above the board replace the horizontal scrollbar. Each click moves one column.
+  // RTL scrollLeft runs 0 → negative, so compare on the absolute value.
+  const board = useRef(null);
+  const [ends, setEnds] = useState({ start: true, end: true });
+  const measure = () => { const el = board.current; if (!el) return; const x = Math.abs(el.scrollLeft); setEnds({ start: x < 2, end: x + el.clientWidth >= el.scrollWidth - 2 }); };
+  useEffect(() => { measure(); window.addEventListener('resize', measure); return () => window.removeEventListener('resize', measure); }, [list.length]);
+  const page = (dir) => { const el = board.current; if (!el) return; const col = el.querySelector('[data-col]'); const step = (col ? col.offsetWidth : 288) + 12; el.scrollBy({ left: dir * step, behavior: 'smooth' }); };
+
   return (
     <>
       <OsPage title="المسار" sub="اسحب البطاقة بين الأعمدة لتغيير المرحلة · إسقاطها في «معاينة» يفتح جدولة الموعد" actions={<>
@@ -48,7 +56,12 @@ export default function Pipeline() {
         <Chip small on={deal === 'sale'} onClick={() => setDeal(deal === 'sale' ? '' : 'sale')}>شراء</Chip>
         <Chip small on={deal === 'rent'} onClick={() => setDeal(deal === 'rent' ? '' : 'rent')}>إيجار</Chip>
       </>} />
-      <div className="flex gap-3 overflow-x-auto snap-x pb-3 -mx-4 px-4 lg:mx-0 lg:px-0 items-start">
+      <div className="flex items-center justify-between mb-2">
+        <button type="button" className="icon-btn bg-white border hair" aria-label="الأعمدة السابقة" title="الأعمدة السابقة" disabled={ends.start} style={{ opacity: ends.start ? 0.35 : 1 }} onClick={() => page(1)}><Icon name="chev" size={18} /></button>
+        <span className="lbl">{STAGES.length} مراحل</span>
+        <button type="button" className="icon-btn bg-white border hair" aria-label="الأعمدة التالية" title="الأعمدة التالية" disabled={ends.end} style={{ opacity: ends.end ? 0.35 : 1 }} onClick={() => page(-1)}><Icon name="chev-l" size={18} /></button>
+      </div>
+      <div ref={board} onScroll={measure} className="flex gap-3 overflow-x-auto no-sb snap-x pb-3 -mx-4 px-4 lg:mx-0 lg:px-0 items-start">
         {STAGES.map(([id, label]) => {
           const items = list.filter((c) => c.stage === id);
           const value = items.reduce((s, c) => s + (c.deal === 'sale' && c.budget ? c.budget : 0), 0);
