@@ -43,7 +43,7 @@ function WhereField({ S, deal, q, area, onChange }) {
         {(text || open) ? (
           <button type="button" className="pk-x w-7 h-7 flex-none inline-flex items-center justify-center rounded-full text-ink-400" aria-label={text ? 'مسح' : 'إغلاق'}
             onPointerDown={(e) => e.preventDefault()} onClick={() => { if (text) onChange({ q: '', area: '' }); else setOpen(false); }}><Icon name={text ? 'close' : 'chev-u'} size={15} /></button>
-        ) : <Icon name="chev-d" size={16} className="text-ink-400 flex-none" />}
+        ) : <button type="button" className="pk-x w-7 h-7 flex-none inline-flex items-center justify-center rounded-full text-ink-400" aria-label="فتح القائمة" onPointerDown={(e) => e.preventDefault()} onClick={() => setOpen(true)}><Icon name="chev-d" size={16} /></button>}
       </div>
       {open && (
         <div id="hs-where" role="listbox" className="pk-dd bg-white rounded-[16px] shadow-pop border hair p-1.5 text-start">

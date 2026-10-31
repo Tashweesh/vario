@@ -258,7 +258,8 @@ export function PickField({ value, options, onChange, placeholder = 'اختار�
         {sel?.icon && <Icon name={sel.icon} size={18} className="text-red flex-none" />}
         <input ref={inp} className="flex-1 min-w-0 bg-transparent outline-none" value={open ? q : (sel ? sel.label : '')} placeholder={sel ? sel.label : placeholder}
           onChange={(e) => { setQ(e.target.value); setOpen(true); }} onFocus={() => setOpen(true)} autoComplete="off" role="combobox" aria-expanded={open} />
-        <Icon name={open ? 'chev-u' : 'chev-d'} size={16} className="text-ink-400 flex-none" />
+        <button type="button" className="pk-x w-7 h-7 -me-2 flex-none inline-flex items-center justify-center rounded-full text-ink-400" aria-label={open ? 'إغلاق القائمة' : 'فتح القائمة'}
+          onPointerDown={(e) => e.preventDefault()} onClick={(e) => { e.stopPropagation(); if (open) { setOpen(false); setQ(''); inp.current && inp.current.blur(); } else show(); }}><Icon name={open ? 'chev-u' : 'chev-d'} size={16} /></button>
       </div>
       {open && (
         <div role="listbox" className="pk-dd bg-white rounded-[16px] shadow-pop border hair p-1.5 text-start">
