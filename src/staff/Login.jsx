@@ -13,20 +13,41 @@ export default function Login() {
   const toast = useToast();
   const [sp] = useSearchParams();
   const [mode, setMode] = useState('in'); // in | up | reset
-  const [f, setF] = useState({ email: '', password: '' });
+  const [f, setF] = useState({ email: '', password: '', password2: '' });
   const [busy, setBusy] = useState(false);
   const next = sp.get('next');
+  // Password recovery: the email link comes back to /login?recovery=1 (and supabase-js also fires PASSWORD_RECOVERY).
+  // While recovering we show the "new password" form instead of sending the signed-in user into the app.
+  const [recovery, setRecovery] = useState(() => sp.get('recovery') === '1' || /type=recovery/.test(window.location.hash));
+  useEffect(() => {
+    const { data: sub } = supabase.auth.onAuthStateChange((evt) => { if (evt === 'PASSWORD_RECOVERY') setRecovery(true); });
+    return () => sub.subscription.unsubscribe();
+  }, []);
 
   useEffect(() => {
-    if (A.me) nav(next && next.startsWith('/') ? next : A.me.role === 'agent' ? '/crm' : '/cms', { replace: true });
-  }, [A.me, next, nav]);
+    if (A.me && !recovery) nav(next && next.startsWith('/') ? next : A.me.role === 'agent' ? '/crm' : '/cms', { replace: true });
+  }, [A.me, next, nav, recovery]);
+
+  const setPassword = async (e) => {
+    e.preventDefault();
+    if (f.password !== f.password2) return toast('كلمتا السر غير متطابقتين', 'error');
+    setBusy(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ password: f.password });
+      if (error) throw error;
+      toast('تم تغيير كلمة المرور');
+      setF({ email: '', password: '', password2: '' });
+      setRecovery(false);
+      nav('/login', { replace: true });
+    } catch (err) { toast(friendlyError(err), 'error'); } finally { setBusy(false); }
+  };
 
   const submit = async (e) => {
     e.preventDefault();
     setBusy(true);
     try {
       if (mode === 'reset') {
-        const { error } = await supabase.auth.resetPasswordForEmail(f.email, { redirectTo: window.location.origin + '/login' });
+        const { error } = await supabase.auth.resetPasswordForEmail(f.email, { redirectTo: `${window.location.origin}/login?recovery=1` });
         if (error) throw error;
         toast('أرسلنا رابط إعادة تعيين كلمة المرور إلى بريدك');
         setMode('in');
@@ -48,7 +69,29 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center p-4 bg-paper-2" dir="rtl">
       <div className="w-full max-w-[460px] os-card p-6 sm:p-8">
         <div className="flex items-center justify-between mb-6"><Logo /><Link to="/" className="link text-[13px]"><Icon name="globe" size={15} />الموقع</Link></div>
-        {A.session && !A.me ? (
+        {recovery ? (
+          A.session ? (
+            <>
+              <div className="osb osb-ink mb-3">إعادة تعيين</div>
+              <h1 className="t-h2 text-[28px]">كلمة سر جديدة</h1>
+              <p className="text-ink-500 text-[14px] mt-1">لحساب <b dir="ltr" className="text-ink">{A.session.user.email}</b>. اختر كلمة سر من 6 أحرف أو أكثر.</p>
+              <form onSubmit={setPassword} className="mt-6">
+                <label className="flabel" htmlFor="new-pw">كلمة السر الجديدة</label>
+                <input id="new-pw" className="field" type="password" required minLength={6} dir="ltr" autoComplete="new-password" autoFocus value={f.password} onChange={(e) => setF({ ...f, password: e.target.value })} />
+                <label className="flabel mt-3" htmlFor="new-pw2">تأكيد كلمة السر</label>
+                <input id="new-pw2" className="field" type="password" required minLength={6} dir="ltr" autoComplete="new-password" value={f.password2} onChange={(e) => setF({ ...f, password2: e.target.value })} />
+                <button type="submit" className="btn btn-red btn-lg w-full mt-5" disabled={busy}>{busy ? '…' : 'احفظ كلمة السر'}</button>
+              </form>
+            </>
+          ) : (
+            <>
+              <div className="osb osb-amber mb-3">الرابط غير صالح</div>
+              <h1 className="t-h2 text-[26px]">انتهت صلاحية الرابط</h1>
+              <p className="text-ink-500 text-[14px] mt-1 leading-relaxed">رابط إعادة التعيين يُستخدم مرة واحدة وينتهي بعد فترة قصيرة. اطلب رابطاً جديداً وافتحه من نفس الجهاز.</p>
+              <Btn kind="ink" className="w-full mt-6" onClick={() => { setRecovery(false); setMode('reset'); nav('/login', { replace: true }); }}><Icon name="mail" size={17} />اطلب رابطاً جديداً</Btn>
+            </>
+          )
+        ) : A.session && !A.me ? (
           <>
             <div className="osb osb-amber mb-3">غير مفعّل</div>
             <h1 className="t-h2 text-[26px]">حسابك غير مفعّل</h1>
