@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { supabase } from '../lib/supabase.js';
-import { AMEN, PROJECT_TYPES, STATUS, TYPE_AR, listingFacts, listingPlan, listingTitle, usd } from '../lib/format.js';
+import { AMEN, PROJECT_TYPES, STATUS, TYPE_AR, listingFacts, listingPlan, listingTitle, usd, handoverText } from '../lib/format.js';
 import { ERBIL, hasPos, toPos } from '../components/MapView.jsx';
 
 // Map position: the row's own pin, else its area's centre, else Erbil.
@@ -87,7 +87,7 @@ export function SiteDataProvider({ children }) {
       const a = A[p.area_id] || {}, d = DV[p.developer_id] || {};
       return {
         ...p, areaName: a.name, areaShort: a.short, devName: d.name, devMono: d.mono, typeAr: PROJECT_TYPES[p.type],
-        isReady: p.status === 'ready', statusLabel: p.status === 'ready' ? 'جاهز' : 'قيد الإنشاء', progressW: p.progress + '%',
+        handover: handoverText(p.handover), isReady: p.status === 'ready', statusLabel: p.status === 'ready' ? 'جاهز' : 'قيد الإنشاء', progressW: p.progress + '%',
         fromText: money(p.price_from), amenList: (p.amenities || []).map((k) => AMEN[k] || k),
         unitList: live.filter((l) => l.project_id === p.id), downPct: p.plan_down + '%', monthsText: p.plan_months + ' شهر',
         instPct: Math.max(0, 100 - p.plan_down - p.plan_handover) + '%', handPct: p.plan_handover + '%', href: `/projects/${p.id}`, pos: posOf(p, a), hasPin: hasPos(p),

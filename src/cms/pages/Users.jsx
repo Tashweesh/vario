@@ -121,7 +121,7 @@ function UserModal({ u, onClose }) {
         <Field label="الصورة">
           <div className="flex items-center gap-2.5">
             <Av src={f.img} name={f.name} size={40} />
-            <span className="btn btn-line btn-sm cursor-pointer" role="button"><Icon name="upload" size={15} />رفع صورة<input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={(e) => upload(e.target.files?.[0])} /></span>
+            <label className="btn btn-line btn-sm cursor-pointer"><Icon name="upload" size={15} />رفع صورة<input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={(e) => upload(e.target.files?.[0])} /></label>
           </div>
         </Field>
         {!isNew && (

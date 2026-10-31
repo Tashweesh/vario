@@ -4,7 +4,7 @@ import { useCms } from '../CmsApp.jsx';
 import { useAuth } from '../../lib/auth.jsx';
 import { supabase, q, uploadMedia, removeMedia, friendlyError } from '../../lib/supabase.js';
 import { useDocTitle } from '../../lib/hooks.js';
-import { CONDITIONS, FURNISHING, LISTING_FEATURES, PAYMENT_AR, STATUS, TYPE_AR, ago, listingPlan, listingTitle, usd } from '../../lib/format.js';
+import { CONDITIONS, FURNISHING, LISTING_FEATURES, PAYMENT_AR, STATUS, TYPE_AR, ago, listingPlan, listingTitle, usd, handoverText, isIsoDate } from '../../lib/format.js';
 import { Btn, Field, Icon, Seg, Spinner, Toggle, useToast } from '../../components/ui.jsx';
 import { Av, Note, OsCard, OsEmpty, OsTabs, PageTitle, Stat, StatusBadge, SwRow } from '../../staff/Shell.jsx';
 import { PlanBar } from '../../site/parts.jsx';
@@ -331,7 +331,7 @@ function PlanTab({ f, set, setF, project }) {
                 <Field label="عند التسليم %"><input className={`${F} num font-semibold`} type="number" min="0" max="100" dir="ltr" disabled={!!fromProj} value={v('plan_handover', 'plan_handover')} onChange={set('plan_handover')} /></Field>
               </div>
               <div className="grid sm:grid-cols-2 gap-4 mt-4">
-                <Field label="موعد التسليم"><input className={F} disabled={!!fromProj} value={fromProj ? project.handover : f.plan_handover_date} onChange={set('plan_handover_date')} placeholder="الربع الرابع 2027" /></Field>
+                <Field label="موعد التسليم">{fromProj ? <input className={F} disabled value={handoverText(project.handover)} readOnly /> : <input className={`${F} num`} type="date" dir="ltr" value={isIsoDate(f.plan_handover_date) ? f.plan_handover_date : ''} onChange={set('plan_handover_date')} />}</Field>
                 <Field label="ملاحظة تظهر للزائر"><input className={F} value={f.plan_note} onChange={set('plan_note')} placeholder="مثلاً: بدون فوائد" /></Field>
               </div>
               {fromProj && <p className="text-[11.5px] text-ink-500 mt-3">القيم مأخوذة من مشروع {project.name} وتتحدث تلقائياً معه.</p>}

@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useCms } from '../CmsApp.jsx';
 import { supabase, q, uploadMedia } from '../../lib/supabase.js';
 import { useDocTitle } from '../../lib/hooks.js';
-import { AMEN, PROJECT_TYPES, usd } from '../../lib/format.js';
+import { AMEN, PROJECT_TYPES, usd, handoverText, isIsoDate } from '../../lib/format.js';
 import { Btn, Field, Icon, Img, Spinner, Toggle, useToast } from '../../components/ui.jsx';
 import { Kpi, Lmini, Osb, OsCard, OsEmpty, OsTable, PageTitle, SwRow } from '../../staff/Shell.jsx';
 import { LocationPicker } from '../../components/MapView.jsx';
@@ -31,7 +31,7 @@ export function ProjectsList() {
               <td><div className="min-w-[220px] flex items-center gap-2"><Lmini img={p.img} title={p.name} sub={`${p.typeAr} · ${p.floors} طابق`} />{!p.published && <Osb tone="amber">مخفي</Osb>}</div></td>
               <td className="text-[13px]">{p.devName || <span className="text-ink-400">بانتظار التأكيد</span>}</td>
               <td className="text-[13px]">{p.areaName}</td>
-              <td><div className="min-w-[140px]"><div className="w-full h-1.5 rounded-full bg-paper-3 overflow-hidden"><div className="h-full rounded-full bg-red" style={{ width: `${Math.min(100, Math.max(0, +p.progress || 0))}%` }} /></div><div className="text-[11.5px] text-ink-500 num mt-1 whitespace-nowrap">{p.progress}% · {p.handover}</div></div></td>
+              <td><div className="min-w-[140px]"><div className="w-full h-1.5 rounded-full bg-paper-3 overflow-hidden"><div className="h-full rounded-full bg-red" style={{ width: `${Math.min(100, Math.max(0, +p.progress || 0))}%` }} /></div><div className="text-[11.5px] text-ink-500 num mt-1 whitespace-nowrap">{p.progress}% · {handoverText(p.handover)}</div></div></td>
               <td className="num whitespace-nowrap">{p.unitCount} <span className="text-ink-400">على الموقع</span></td>
               <td>{p.status === 'ready' ? <Osb tone="green">جاهز</Osb> : <Osb tone="amber">قيد الإنشاء</Osb>}</td>
               <td className="text-end"><button type="button" className="btn btn-line btn-sm !h-8" onClick={(e) => { e.stopPropagation(); nav(`/cms/projects/${p.id}`); }}>تعديل</button></td>
@@ -122,7 +122,7 @@ export function ProjectEditor() {
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
               <Field label="الحالة"><select className={F} value={f.status} onChange={set('status')}><option value="construction">قيد الإنشاء</option><option value="ready">جاهز</option></select></Field>
               <Field label="نسبة الإنجاز %">{numIn('progress', { max: 100, disabled: f.status === 'ready' })}</Field>
-              <Field label="موعد التسليم">{inp('handover', { placeholder: 'الربع الرابع 2027' })}</Field>
+              <Field label="موعد التسليم" hint={f.handover && !isIsoDate(f.handover) ? `القيمة القديمة «${f.handover}» — اختر تاريخاً من التقويم` : undefined}><input className={`${F} num`} type="date" dir="ltr" value={isIsoDate(f.handover) ? f.handover : ''} onChange={set('handover')} /></Field>
               <Field label="الطوابق">{numIn('floors')}</Field>
               <Field label="إجمالي الوحدات">{numIn('units')}</Field>
               <Field label="يبدأ من (دولار)">{numIn('price_from')}</Field>
@@ -149,7 +149,7 @@ export function ProjectEditor() {
         <aside className="os-aside grid gap-5 min-w-0">
           <OsCard title="صورة الغلاف">
             <Img src={f.img} className="w-full rounded-[12px]" style={{ aspectRatio: '16/10' }} />
-            <span className="btn btn-line btn-sm w-full mt-3 cursor-pointer" role="button"><Icon name="upload" size={15} />{busy ? '…' : 'تغيير الصورة'}<input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={(e) => cover(e.target.files?.[0])} /></span>
+            <label className="btn btn-line btn-sm w-full mt-3 cursor-pointer"><Icon name="upload" size={15} />{busy ? '…' : 'تغيير الصورة'}<input type="file" accept="image/jpeg,image/png,image/webp,image/avif" className="hidden" disabled={busy} onChange={(e) => { cover(e.target.files?.[0]); e.target.value = ''; }} /></label>
             <input className="field !h-9 !text-[12.5px] mono mt-2" dir="ltr" placeholder="أو رابط صورة" value={f.img} onChange={set('img')} />
           </OsCard>
           <OsCard title="بالموقع">

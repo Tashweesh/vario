@@ -81,7 +81,7 @@ function AreaModal({ a, onClose }) {
           <div className="flex items-center gap-3">
             {f.img && <Img src={f.img} className="w-24 h-16 rounded-[10px] flex-none" />}
             <input className={`${F} mono flex-1 min-w-0`} dir="ltr" value={f.img || ''} onChange={set('img')} placeholder="https://…" />
-            <span className="btn btn-line btn-sm !h-10 flex-none cursor-pointer" role="button"><Icon name="upload" size={15} />رفع<input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={(e) => upload(e.target.files?.[0])} /></span>
+            <label className="btn btn-line btn-sm !h-10 flex-none cursor-pointer"><Icon name="upload" size={15} />رفع<input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={(e) => upload(e.target.files?.[0])} /></label>
           </div>
         </Field>
         <div className="sm:col-span-2 text-[11px] font-semibold text-ink-400 uppercase tracking-wide mt-1">هوية المنطقة (0–10)</div>

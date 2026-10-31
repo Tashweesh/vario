@@ -46,6 +46,9 @@ export function count(n, w) {
 
 export const AR_DAYS = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
 export const AR_MONTHS = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+// Project delivery date: stored as YYYY-MM-DD (date picker); older free-text values are shown as they are.
+export const isIsoDate = (v) => /^\d{4}-\d{2}-\d{2}$/.test(v || '');
+export const handoverText = (v) => { if (!isIsoDate(v)) return v || ''; const [y, m, d] = v.split('-').map(Number); return `${d} ${AR_MONTHS[m - 1]} ${y}`; };
 export const dayLabel = (d) => `${AR_DAYS[d.getDay()]} ${d.getDate()} ${AR_MONTHS[d.getMonth()]}`;
 export const dateShort = (d) => `${d.getDate()} ${AR_MONTHS[d.getMonth()]}`;
 export const hhmm = (d) => `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
