@@ -2,7 +2,17 @@
 <html lang="ar" dir="rtl">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+    <script>
+      // Every load starts at the default scale (maximum-scale=1 above resets any zoom the browser kept),
+      // then pinch-to-zoom is re-enabled once the page is up.
+      addEventListener('load', function () {
+        setTimeout(function () {
+          var m = document.querySelector('meta[name="viewport"]');
+          if (m) m.setAttribute('content', 'width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=5, viewport-fit=cover');
+        }, 300);
+      });
+    </script>
     <meta name="theme-color" content="#ffffff" />
     <title>VAIRO · عقارات أربيل</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
