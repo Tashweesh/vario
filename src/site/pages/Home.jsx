@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useSite } from '../SiteData.jsx';
 import { useDocTitle } from '../../lib/hooks.js';
@@ -10,7 +10,66 @@ import { MapExplorer } from './MapPage.jsx';
 // Homepage ported from the design reference (pages/home.js): hero + unified search, categories, featured rail,
 // neighbourhoods + map, tools, owners. Sections are gated by S.settings.sections exactly as before.
 
-const HS_STYLE = `.hs-f{display:flex;flex-direction:column;justify-content:center;padding:10px 18px;min-height:64px;border-bottom:1px solid var(--line)}@media(min-width:768px){.hs-f{border-bottom:0}}.hs-l{font-size:12px;font-weight:600;color:#767A83}.hs-i{width:100%;background:transparent;outline:none;font-size:15px;font-weight:500;appearance:none;cursor:pointer;padding:2px 0}.hs-i::placeholder{color:#9DA0A7;font-weight:400}`;
+const HS_STYLE = `.hs-f{display:flex;flex-direction:column;justify-content:center;padding:10px 18px;min-height:64px;border-bottom:1px solid var(--line)}@media(min-width:768px){.hs-f{border-bottom:0}}.hs-l{font-size:12px;font-weight:600;color:#767A83}.hs-i{width:100%;background:transparent;outline:none;font-size:15px;font-weight:500;appearance:none;cursor:pointer;padding:2px 0}.hs-i::placeholder{color:#9DA0A7;font-weight:400}.hs-dd{position:absolute;top:100%;inset-inline:0;margin-top:4px;z-index:40;max-height:300px;overflow-y:auto}.hs-opt{width:100%;display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:12px;font-size:14.5px;text-align:start}.hs-opt:hover,.hs-opt.on{background:#F6F6F4}.hs-opt.on{font-weight:600}.hs-x:hover{background:#F6F6F4}`;
+
+// "وين" field: a touch-friendly picker instead of the reference's <datalist> (mobile browsers don't open datalists).
+// Tapping opens every area (with listing counts for the current deal); typing filters areas and projects; picking an
+// area sets a real area filter (?area=), picking a project sets the text query. Free text still works as before.
+function WhereField({ S, deal, q, area, onChange }) {
+  const [open, setOpen] = useState(false);
+  const box = useRef(null);
+  useEffect(() => {
+    if (!open) return;
+    const h = (e) => { if (box.current && !box.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('pointerdown', h);
+    return () => document.removeEventListener('pointerdown', h);
+  }, [open]);
+  const sel = area ? S.areaById(area) : null;
+  const text = sel && !q ? sel.name : q;
+  const norm = (x) => (x || '').toString().toLowerCase().replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').trim();
+  const needle = norm(q);
+  const hit = (...xs) => !needle || xs.some((x) => norm(x).includes(needle));
+  const areas = S.areas.filter((a) => hit(a.name, a.short, a.name_en, a.id));
+  const projs = needle ? S.projs.filter((p) => hit(p.name, p.name_en, p.id)).slice(0, 6) : [];
+  const cntOf = (a) => (deal === 'rent' ? a.rentCount : a.saleCount);
+  const pick = (next) => { onChange(next); setOpen(false); };
+  return (
+    <div ref={box} className="hs-f md:border-e hair relative">
+      <label className="hs-l" htmlFor="hs-q">وين</label>
+      <div className="flex items-center gap-2">
+        <input id="hs-q" className="hs-i" value={text} onFocus={() => setOpen(true)} onClick={() => setOpen(true)}
+          onChange={(e) => { onChange({ q: e.target.value, area: '' }); setOpen(true); }}
+          placeholder={deal === 'rent' ? 'منطقة، مجمع أو معلم' : 'منطقة، مشروع، مطوّر أو رقم'} autoComplete="off" role="combobox" aria-expanded={open} aria-controls="hs-where" />
+        {(text || open) ? (
+          <button type="button" className="hs-x w-7 h-7 flex-none inline-flex items-center justify-center rounded-full text-ink-400" aria-label={text ? 'مسح' : 'إغلاق'}
+            onPointerDown={(e) => e.preventDefault()} onClick={() => { if (text) onChange({ q: '', area: '' }); else setOpen(false); }}><Icon name={text ? 'close' : 'chev-u'} size={15} /></button>
+        ) : <Icon name="chev-d" size={16} className="text-ink-400 flex-none" />}
+      </div>
+      {open && (
+        <div id="hs-where" role="listbox" className="hs-dd bg-white rounded-[16px] shadow-pop border hair p-1.5 text-start">
+          {!needle && (
+            <button type="button" role="option" aria-selected={!area} className={`hs-opt ${!area ? 'on' : ''}`} onClick={() => pick({ q: '', area: '' })}>
+              <Icon name="compass" size={17} className="text-ink-400" /><span className="flex-1">كل أربيل</span><span className="lbl num">{S.live.filter((l) => l.deal === deal).length}</span>
+            </button>
+          )}
+          {areas.length > 0 && <div className="lbl px-3 pt-2 pb-1">المناطق</div>}
+          {areas.map((a) => (
+            <button key={a.id} type="button" role="option" aria-selected={area === a.id} className={`hs-opt ${area === a.id ? 'on' : ''}`} onClick={() => pick({ q: '', area: a.id })}>
+              <Icon name="pin" size={17} className="text-ink-400" /><span className="flex-1 truncate">{a.name}</span><span className="lbl num">{cntOf(a) ? `${cntOf(a)} عقار` : 'لا يوجد حالياً'}</span>
+            </button>
+          ))}
+          {projs.length > 0 && <div className="lbl px-3 pt-2 pb-1">المشاريع</div>}
+          {projs.map((p) => (
+            <button key={p.id} type="button" role="option" className="hs-opt" onClick={() => pick({ q: p.name, area: '' })}>
+              <Icon name="compound" size={17} className="text-ink-400" /><span className="flex-1 truncate">{p.name}</span><span className="lbl truncate">{S.areaById(p.area_id)?.short || ''}</span>
+            </button>
+          ))}
+          {!areas.length && !projs.length && <div className="px-3 py-4 text-[13.5px] text-ink-500">ماكو منطقة أو مشروع بهذا الاسم — اضغط ابحث للبحث بالنص.</div>}
+        </div>
+      )}
+    </div>
+  );
+}
 
 const CAT_ICON = { apartment: 'tower', house: 'home', villa: 'villa', land: 'land', commercial: 'shop', compound: 'compound', installments: 'percent', ready: 'key' };
 const TOOLS = [
@@ -29,7 +88,7 @@ export default function Home() {
   const S = useSite();
   const nav = useNavigate();
   const [deal, setDeal] = useState('sale');
-  const [f, setF] = useState({ q: '', type: '', max: '', pay: '' });
+  const [f, setF] = useState({ q: '', area: '', type: '', max: '', pay: '' });
   const [bm, setBm] = useState('sale'); // explore-by-budget mode (reference: budget())
 
   // short money for the budget bands: $100K / $1.2M
@@ -48,7 +107,9 @@ export default function Home() {
 
   const search = () => {
     const p = new URLSearchParams();
-    Object.entries(f).forEach(([k, v]) => v && !(deal === 'rent' && k === 'pay') && p.set(k, v));
+    const g = { ...f };
+    if (!g.area && g.q) { const n = g.q.trim().toLowerCase(); const a = S.areas.find((x) => [x.name, x.short, x.name_en].filter(Boolean).some((t) => t.toLowerCase() === n)); if (a) { g.area = a.id; g.q = ''; } }
+    Object.entries(g).forEach(([k, v]) => v && !(deal === 'rent' && k === 'pay') && p.set(k, v));
     nav(`/${deal === 'rent' ? 'rent' : 'buy'}${p.toString() ? '?' + p : ''}`);
   };
   const maxOpts = deal === 'rent' ? [500, 1000, 1500, 2500, 4000] : [75000, 100000, 150000, 250000, 400000, 600000];
@@ -98,7 +159,7 @@ export default function Home() {
               </div>
             </div>
             <form onSubmit={(e) => { e.preventDefault(); search(); }} className="mt-3 bg-white rounded-[22px] shadow-pop border hair p-2 grid md:grid-cols-[1.5fr_1fr_1fr_1fr_auto] items-stretch">
-              <label className="hs-f md:border-e hair"><span className="hs-l">وين</span><input className="hs-i" value={f.q} onChange={(e) => setF({ ...f, q: e.target.value })} placeholder={deal === 'rent' ? 'منطقة، مجمع أو معلم' : 'منطقة، مشروع، مطوّر أو رقم'} autoComplete="off" /></label>
+              <WhereField S={S} deal={deal} q={f.q} area={f.area} onChange={(w) => setF({ ...f, ...w })} />
               <label className="hs-f md:border-e hair"><span className="hs-l">النوع</span>
                 <select className="hs-i" value={f.type} onChange={(e) => setF({ ...f, type: e.target.value })}>
                   <option value="">{deal === 'rent' ? 'أي سكن أو مساحة' : 'أي عقار'}</option>{TYPE_GROUPS.map(([k, t]) => <option key={k} value={k}>{t}</option>)}

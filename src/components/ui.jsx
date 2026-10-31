@@ -41,7 +41,7 @@ const IC = {
   plot: '<path d="m3 8 9-5 9 5-9 5-9-5Z"/><path d="m3 13 9 5 9-5"/>',
   arrow: '<path d="M5 12h14M13 6l6 6-6 6"/>',
   'arrow-up': '<path d="M7 17 17 7M8 7h9v9"/>',
-  chev: '<path d="m9 6 6 6-6 6"/>', 'chev-d': '<path d="m6 9 6 6 6-6"/>', 'chev-l': '<path d="m15 6-6 6 6 6"/>',
+  chev: '<path d="m9 6 6 6-6 6"/>', 'chev-d': '<path d="m6 9 6 6 6-6"/>', 'chev-u': '<path d="m6 15 6-6 6 6"/>', 'chev-l': '<path d="m15 6-6 6 6 6"/>',
   close: '<path d="M6 6l12 12M18 6 6 18"/>', menu: '<path d="M4 7h16M4 12h16M4 17h10"/>',
   globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3Z"/>',
   phone: '<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2Z"/>',
