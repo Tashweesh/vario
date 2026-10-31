@@ -20,7 +20,7 @@ export const Dot6 = () => <span style={{ width: 6, height: 6, borderRadius: 999,
 
 // The app's two workspaces (the reference has four: me / company / website / people).
 const WS = {
-  cms: { to: '/cms', icon: 'globe', label: 'الموقع', sub: 'كل شي يشوفه الزبون بالموقع' },
+  cms: { to: '/cms', icon: 'globe', label: 'إدارة الموقع', sub: 'كل شي يشوفه الزبون بالموقع' },
   crm: { to: '/crm', icon: 'users', label: 'العملاء', sub: 'الطلبات والعملاء والمعاينات' },
 };
 const wsOf = (path) => (path.startsWith('/crm') ? 'crm' : 'cms');
@@ -140,7 +140,7 @@ export function Shell({ sub, items, switchTo, search, onSearch, searchPlaceholde
           <Link key={k} to={w.to} className={`os-ws ${k === ws ? 'on' : ''}`} title={w.label}><Icon name={w.icon} size={21} /><span>{w.label}</span></Link>
         ))}
         <div className="flex-1" />
-        <Link to="/" className="os-ws" title="افتح الموقع"><Icon name="arrow-up" size={19} /><span>الموقع</span></Link>
+        <Link to="/" className="os-ws" title="عرض الموقع"><Icon name="arrow-up" size={19} /><span>عرض الموقع</span></Link>
       </nav>
       <aside className="os-side hidden lg:block">{sidebar}</aside>
       <div className="os-main">
