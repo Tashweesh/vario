@@ -134,7 +134,7 @@ function UserModal({ u, onClose }) {
           </SwRow>
         )}
         <div className="sm:col-span-2 flex items-center justify-between gap-3 pt-3 border-t hair">
-          {!isNew && !isMe ? <Btn kind="ghost" size="sm" className="!text-red-700" disabled={busy} onClick={remove}><Icon name="trash" size={15} />حذف المستخدم</Btn> : <span />}
+          {!isNew && !isMe ? <Btn kind="red" size="sm" disabled={busy} onClick={remove}><Icon name="trash" size={15} />حذف المستخدم</Btn> : <span />}
           <Btn type="submit" kind="red" size="sm" disabled={busy}><Icon name={isNew ? 'mail' : 'check'} size={15} />{isNew ? 'إرسال الدعوة' : 'حفظ'}</Btn>
         </div>
       </form>
