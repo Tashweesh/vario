@@ -10,7 +10,7 @@ import { MapExplorer } from './MapPage.jsx';
 // Homepage ported from the design reference (pages/home.js): hero + unified search, categories, featured rail,
 // neighbourhoods + map, tools, owners. Sections are gated by S.settings.sections exactly as before.
 
-const HS_STYLE = `.hs-f{display:flex;flex-direction:column;justify-content:center;padding:10px 18px;min-height:64px;border-bottom:1px solid var(--line)}@media(min-width:768px){.hs-f{border-bottom:0}}.hs-l{font-size:12px;font-weight:600;color:#767A83}.hs-i{width:100%;background:transparent;outline:none;font-size:15px;font-weight:500;appearance:none;cursor:pointer;padding:2px 0}.hs-i::placeholder{color:#9DA0A7;font-weight:400}.hs-dd{position:absolute;top:100%;inset-inline:0;margin-top:4px;z-index:40;max-height:300px;overflow-y:auto}.hs-opt{width:100%;display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:12px;font-size:14.5px;text-align:start}.hs-opt:hover,.hs-opt.on{background:#F6F6F4}.hs-opt.on{font-weight:600}.hs-x:hover{background:#F6F6F4}`;
+const HS_STYLE = `.hs-f{display:flex;flex-direction:column;justify-content:center;padding:10px 18px;min-height:64px;border-bottom:1px solid var(--line)}@media(min-width:768px){.hs-f{border-bottom:0}}.hs-l{font-size:12px;font-weight:600;color:#767A83}.hs-i{width:100%;background:transparent;outline:none;font-size:15px;font-weight:500;appearance:none;cursor:pointer;padding:2px 0}.hs-i::placeholder{color:#9DA0A7;font-weight:400}`;
 
 // "وين" field: a touch-friendly picker instead of the reference's <datalist> (mobile browsers don't open datalists).
 // Tapping opens every area (with listing counts for the current deal); typing filters areas and projects; picking an
@@ -41,26 +41,26 @@ function WhereField({ S, deal, q, area, onChange }) {
           onChange={(e) => { onChange({ q: e.target.value, area: '' }); setOpen(true); }}
           placeholder={deal === 'rent' ? 'منطقة، مجمع أو معلم' : 'منطقة، مشروع، مطوّر أو رقم'} autoComplete="off" role="combobox" aria-expanded={open} aria-controls="hs-where" />
         {(text || open) ? (
-          <button type="button" className="hs-x w-7 h-7 flex-none inline-flex items-center justify-center rounded-full text-ink-400" aria-label={text ? 'مسح' : 'إغلاق'}
+          <button type="button" className="pk-x w-7 h-7 flex-none inline-flex items-center justify-center rounded-full text-ink-400" aria-label={text ? 'مسح' : 'إغلاق'}
             onPointerDown={(e) => e.preventDefault()} onClick={() => { if (text) onChange({ q: '', area: '' }); else setOpen(false); }}><Icon name={text ? 'close' : 'chev-u'} size={15} /></button>
         ) : <Icon name="chev-d" size={16} className="text-ink-400 flex-none" />}
       </div>
       {open && (
-        <div id="hs-where" role="listbox" className="hs-dd bg-white rounded-[16px] shadow-pop border hair p-1.5 text-start">
+        <div id="hs-where" role="listbox" className="pk-dd bg-white rounded-[16px] shadow-pop border hair p-1.5 text-start">
           {!needle && (
-            <button type="button" role="option" aria-selected={!area} className={`hs-opt ${!area ? 'on' : ''}`} onClick={() => pick({ q: '', area: '' })}>
+            <button type="button" role="option" aria-selected={!area} className={`pk-opt ${!area ? 'on' : ''}`} onClick={() => pick({ q: '', area: '' })}>
               <Icon name="compass" size={17} className="text-ink-400" /><span className="flex-1">كل أربيل</span><span className="lbl num">{S.live.filter((l) => l.deal === deal).length}</span>
             </button>
           )}
           {areas.length > 0 && <div className="lbl px-3 pt-2 pb-1">المناطق</div>}
           {areas.map((a) => (
-            <button key={a.id} type="button" role="option" aria-selected={area === a.id} className={`hs-opt ${area === a.id ? 'on' : ''}`} onClick={() => pick({ q: '', area: a.id })}>
+            <button key={a.id} type="button" role="option" aria-selected={area === a.id} className={`pk-opt ${area === a.id ? 'on' : ''}`} onClick={() => pick({ q: '', area: a.id })}>
               <Icon name="pin" size={17} className="text-ink-400" /><span className="flex-1 truncate">{a.name}</span><span className="lbl num">{cntOf(a) ? `${cntOf(a)} عقار` : 'لا يوجد حالياً'}</span>
             </button>
           ))}
           {projs.length > 0 && <div className="lbl px-3 pt-2 pb-1">المشاريع</div>}
           {projs.map((p) => (
-            <button key={p.id} type="button" role="option" className="hs-opt" onClick={() => pick({ q: p.name, area: '' })}>
+            <button key={p.id} type="button" role="option" className="pk-opt" onClick={() => pick({ q: p.name, area: '' })}>
               <Icon name="compound" size={17} className="text-ink-400" /><span className="flex-1 truncate">{p.name}</span><span className="lbl truncate">{S.areaById(p.area_id)?.short || ''}</span>
             </button>
           ))}

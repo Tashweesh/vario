@@ -8,6 +8,13 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 body { touch-action: manipulation; }
 @media (hover: none) and (pointer: coarse) { input, select, textarea { font-size: 16px !important; } }
 
+/* Filterable pickers (home "وين" field, owner wizard): dropdown panel + option rows */
+.pk-dd { position: absolute; top: 100%; inset-inline: 0; margin-top: 4px; z-index: 40; max-height: 300px; overflow-y: auto; }
+.pk-opt { width: 100%; display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 12px; font-size: 14.5px; text-align: start; }
+.pk-opt:hover, .pk-opt.on { background: #F6F6F4; }
+.pk-opt.on { font-weight: 600; }
+.pk-x:hover { background: #F6F6F4; }
+
 /* ───────────── additions the React app needs on top of the reference stylesheet */
 .btn-green { background: #0f8a4f; color: #fff; }
 .btn-green:hover { background: #0c7343; }

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useSite } from '../SiteData.jsx';
 import { useDocTitle } from '../../lib/hooks.js';
-import { Field, Icon, Img, useToast, PhoneField } from '../../components/ui.jsx';
+import { Field, Icon, Img, useToast, PhoneField, PickField } from '../../components/ui.jsx';
 import { Crumbs, submitLead } from '../parts.jsx';
 
 // /sell?mode=sale|rent — ported from the reference pages/sell.js (sale) and pages/listrent.js (rent):
@@ -29,15 +29,6 @@ const COPY = {
 };
 
 // Option tile (the reference's category / area buttons): 1px ring + paper background when selected.
-function OptTile({ on, icon, label, sub, className = '', onClick, style }) {
-  return (
-    <button type="button" aria-pressed={!!on} onClick={onClick} style={style} className={`text-start p-4 rounded-[16px] border transition-colors flex flex-col ${on ? 'border-ink ring-1 ring-ink bg-paper-2' : 'hair hover:border-ink-300 bg-white'} ${className}`}>
-      {icon && <span className={`mi-ic ${on ? '!bg-white text-red' : ''}`}><Icon name={icon} size={20} /></span>}
-      <span className={`font-semibold ${icon ? 'mt-auto pt-4' : 'text-[14px] clamp-1'}`}>{label}</span>
-      {sub && <span className="lbl clamp-2">{sub}</span>}
-    </button>
-  );
-}
 
 export default function Owners() {
   useDocTitle('بيع / أجّر عقارك');
@@ -98,11 +89,11 @@ export default function Owners() {
     if (step === 1) return (
       <>
         <h2 className="t-h2 text-[24px] sm:text-[30px]">شنو تريد تسوي؟</h2><p className="text-ink-600 mt-1">اختار الأقرب، وبعدين تضيف التفاصيل.</p>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mt-6">{MODE_OPTS.map(([k, ic, t, d]) => <OptTile key={k} on={f.mode === k} icon={ic} label={t} sub={d} style={{ minHeight: 132 }} onClick={() => set('mode')(k)} />)}</div>
-        <div className="flabel mt-8">نوع العقار</div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">{TYPES.map(([t, ic, d]) => <OptTile key={t} on={f.type === t} icon={ic} label={t} sub={d} style={{ minHeight: 132 }} onClick={() => set('type')(t)} />)}</div>
-        <div className="flabel mt-8">المنطقة <span className="text-red">*</span></div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">{S.areas.map((a) => <OptTile key={a.id} on={f.area === a.id} label={a.short || a.name} sub={a.vibe} style={{ padding: '12px 14px', borderRadius: 12 }} onClick={() => set('area')(a.id)} />)}</div>
+        <div className="mt-6"><PickField value={f.mode} options={MODE_OPTS.map(([v, icon, label, sub]) => ({ v, icon, label, sub }))} onChange={set('mode')} placeholder="بيع، إيجار، أو ما قررت بعد" /></div>
+        <div className="flabel mt-6">نوع العقار</div>
+        <PickField value={f.type} options={TYPES.map(([v, icon, sub]) => ({ v, icon, label: v, sub }))} onChange={set('type')} placeholder="شقة، بيت، فيلا، أرض، تجاري" />
+        <div className="flabel mt-6">المنطقة <span className="text-red">*</span></div>
+        <PickField value={f.area} options={S.areas.map((a) => ({ v: a.id, icon: 'pin', label: a.name, sub: a.vibe }))} onChange={set('area')} placeholder="اكتب أو اختار المنطقة" />
         <div className="grid sm:grid-cols-2 gap-4 mt-6">
           <Field label={<>المساحة <span className="lbl font-normal">اختياري</span></>}><div className="relative"><input className="field pe-14 num" type="number" min="1" inputMode="numeric" placeholder="مثلاً 180" value={f.size} onChange={set('size')} /><span className="absolute end-4 top-1/2 -translate-y-1/2 text-[13px] text-ink-500 pointer-events-none">م²</span></div></Field>
         </div>

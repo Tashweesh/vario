@@ -233,6 +233,49 @@ export function Seg({ value, options, onChange, large, full, className = '', sty
 }
 
 // Labelled form field (.flabel + any .field/.inp control).
+// Filterable picker: a field that opens a list of options (icon, label, sub) and filters it as you type.
+// Works on touch screens, unlike a native <datalist>. Options: [{ v, label, sub?, icon? }].
+export function PickField({ value, options, onChange, placeholder = 'اختار…', className = '', style }) {
+  const [open, setOpen] = useState(false);
+  const [q, setQ] = useState('');
+  const box = useRef(null);
+  const inp = useRef(null);
+  useEffect(() => {
+    if (!open) return;
+    const h = (e) => { if (box.current && !box.current.contains(e.target)) { setOpen(false); setQ(''); } };
+    document.addEventListener('pointerdown', h);
+    return () => document.removeEventListener('pointerdown', h);
+  }, [open]);
+  const norm = (x) => (x || '').toString().toLowerCase().replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').trim();
+  const needle = norm(q);
+  const sel = options.find((o) => o.v === value);
+  const list = options.filter((o) => !needle || norm(o.label).includes(needle) || norm(o.sub).includes(needle) || norm(o.v).includes(needle));
+  const pick = (v) => { onChange(v); setOpen(false); setQ(''); };
+  const show = () => { setOpen(true); setTimeout(() => inp.current && inp.current.focus(), 0); };
+  return (
+    <div ref={box} className={`relative ${className}`} style={style}>
+      <div className={`field flex items-center gap-3 cursor-text ${open ? 'border-ink ring-1 ring-ink' : ''}`} onClick={show}>
+        {sel?.icon && <Icon name={sel.icon} size={18} className="text-red flex-none" />}
+        <input ref={inp} className="flex-1 min-w-0 bg-transparent outline-none" value={open ? q : (sel ? sel.label : '')} placeholder={sel ? sel.label : placeholder}
+          onChange={(e) => { setQ(e.target.value); setOpen(true); }} onFocus={() => setOpen(true)} autoComplete="off" role="combobox" aria-expanded={open} />
+        <Icon name={open ? 'chev-u' : 'chev-d'} size={16} className="text-ink-400 flex-none" />
+      </div>
+      {open && (
+        <div role="listbox" className="pk-dd bg-white rounded-[16px] shadow-pop border hair p-1.5 text-start">
+          {list.map((o) => (
+            <button key={o.v} type="button" role="option" aria-selected={o.v === value} className={`pk-opt ${o.v === value ? 'on' : ''}`} onClick={() => pick(o.v)}>
+              {o.icon && <span className={`mi-ic !w-9 !h-9 ${o.v === value ? 'bg-white text-red' : 'bg-paper-2 text-ink-500'}`}><Icon name={o.icon} size={17} /></span>}
+              <span className="flex-1 min-w-0"><span className="block truncate">{o.label}</span>{o.sub && <span className="block lbl truncate font-normal">{o.sub}</span>}</span>
+              {o.v === value && <Icon name="check" size={16} className="text-red flex-none" />}
+            </button>
+          ))}
+          {!list.length && <div className="px-3 py-4 text-[13.5px] text-ink-500">ماكو خيار بهذا الاسم.</div>}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function Field({ label, children, style, className = '', hint }) {
   return (
     <label className={`block min-w-0 ${className}`} style={style}>
