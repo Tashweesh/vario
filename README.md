@@ -59,6 +59,7 @@ Reset the data at any time with `npx supabase db reset`. After changing `project
    insert into staff (agent_id, email, role) values ('owner', 'you@company.com', 'admin');
    ```
    Then open `/login` → «أول مرة؟ فعّل حسابك» with that email. Everyone else is invited from **CMS → المستخدمون والصلاحيات**.
+   Sign-up is refused for any email that has no pending invitation (trigger on `auth.users`), so the invite must exist first.
 3. In Supabase **Authentication → URL configuration**, set the site URL and add `https://<your-domain>/login` as a redirect URL (used by password reset).
 4. Build with `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` set, and host `dist/` on any static host. SPA fallbacks are included for Netlify (`public/_redirects`) and Vercel (`vercel.json`).
 

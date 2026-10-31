@@ -52,14 +52,17 @@ export default function Login() {
           <>
             <div className="osb osb-amber mb-3">غير مفعّل</div>
             <h1 className="t-h2 text-[26px]">حسابك غير مفعّل</h1>
-            <p className="text-ink-500 text-[14px] mt-1 leading-relaxed">سجّلت الدخول بـ <b dir="ltr" className="text-ink">{A.session.user.email}</b> لكن هذا البريد غير مضاف لفريق ڤايرو. اطلب من مدير النظام دعوتك من «المستخدمون والصلاحيات» بنفس البريد.</p>
-            <div className="mt-6"><Link to="/" className="btn btn-ink w-full"><Icon name="home" size={17} />الرجوع للصفحة الرئيسية</Link></div>
+            <p className="text-ink-500 text-[14px] mt-1 leading-relaxed">سجّلت الدخول بـ <b dir="ltr" className="text-ink">{A.session.user.email}</b> لكن هذا البريد غير مضاف لفريق ڤايرو أو حسابه موقوف. اطلب من مدير النظام دعوتك من «المستخدمون والصلاحيات» بنفس البريد.</p>
+            <div className="mt-6 grid gap-2.5">
+              <Btn kind="ink" className="w-full" onClick={async () => { await A.signOut(); setMode('in'); }}><Icon name="door" size={17} />تسجيل الخروج والدخول بحساب آخر</Btn>
+              <Link to="/" className="btn btn-line w-full"><Icon name="home" size={17} />الرجوع للصفحة الرئيسية</Link>
+            </div>
           </>
         ) : (
           <>
             <div className="osb osb-ink mb-3">VAIRO OS</div>
             <h1 className="t-h2 text-[28px]">{mode === 'up' ? 'تفعيل حساب الفريق' : mode === 'reset' ? 'نسيت كلمة المرور' : 'تسجيل الدخول لڤايرو'}</h1>
-            <p className="text-ink-500 text-[14px] mt-1">{mode === 'up' ? 'استخدم نفس البريد اللي دعاك عليه مدير النظام.' : mode === 'reset' ? 'نرسل لك رابط إعادة تعيين كلمة المرور على بريدك.' : 'حساب واحد لإدارة الموقع ونظام العملاء.'}</p>
+            <p className="text-ink-500 text-[14px] mt-1">{mode === 'up' ? 'استخدم نفس البريد اللي دعاك عليه مدير النظام — البريد غير المدعو ما يگدر ينشئ حساب.' : mode === 'reset' ? 'نرسل لك رابط إعادة تعيين كلمة المرور على بريدك.' : 'حساب واحد لإدارة الموقع ونظام العملاء.'}</p>
             <form onSubmit={submit} className="mt-6">
               <label className="flabel" htmlFor="login-email">إيميل العمل</label>
               <input id="login-email" className="field" type="email" required dir="ltr" autoComplete="email" placeholder="name@vairo.iq" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} />

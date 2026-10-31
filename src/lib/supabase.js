@@ -19,6 +19,7 @@ export function friendlyError(error) {
   if (/duplicate key/i.test(m)) return 'هذا السجل موجود مسبقاً';
   if (/violates foreign key/i.test(m)) return 'السجل مرتبط ببيانات أخرى';
   if (/Invalid login credentials/i.test(m)) return 'البريد أو كلمة المرور غير صحيحة';
+  if (/Database error saving new user/i.test(m)) return 'هذا البريد غير مدعو لفريق ڤايرو — اطلب من مدير النظام دعوتك أولاً';
   if (/Failed to fetch|NetworkError/i.test(m)) return 'تعذّر الاتصال بالخادم';
   return m;
 }

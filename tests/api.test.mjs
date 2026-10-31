@@ -286,12 +286,13 @@ describe('admin role', () => {
     assert.ok(again.error, 'the deleted account can no longer sign in');
     await ok(admin.from('listings').delete().eq('id', l.id));
   });
-  test('an un-invited signup gets no access', async () => {
+  test('an un-invited email cannot sign up at all', async () => {
     const u = client();
-    assert.ifError((await u.auth.signUp({ email: `stranger${Date.now()}@example.com`, password: 'secret-123' })).error);
+    const { data, error } = await u.auth.signUp({ email: `stranger${Date.now()}@example.com`, password: 'secret-123' });
+    assert.ok(error, 'sign-up without an invitation must be refused');
+    assert.equal(data?.session, null);
     assert.equal((await ok(u.rpc('me'))).length, 0);
     assert.equal((await ok(u.from('contacts').select('id'))).length, 0);
-    await fails(u.from('listings').insert({ deal: 'sale', type: 'land', area_id: 'kirkuk', size: 1, price: 1 }));
   });
   test('the last admin cannot be demoted', async () => {
     await fails(admin.from('staff').update({ role: 'editor' }).eq('agent_id', 'alan'), /مدير/);
