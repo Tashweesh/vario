@@ -4,7 +4,7 @@ import { useAuth } from '../../lib/auth.jsx';
 import { supabase, q, uploadMedia } from '../../lib/supabase.js';
 import { useDocTitle, useSearchQuery } from '../../lib/hooks.js';
 import { ROLE_AR } from '../../lib/format.js';
-import { Btn, Field, Icon, Modal, Toggle, useToast } from '../../components/ui.jsx';
+import { Btn, Field, Icon, Modal, PhoneField, Toggle, useToast } from '../../components/ui.jsx';
 import { Av, Osb, OsCard, OsEmpty, OsTable, PageTitle, SearchChip, SwRow } from '../../staff/Shell.jsx';
 
 const F = 'field !h-10 !text-[13.5px]';
@@ -120,7 +120,7 @@ function UserModal({ u, onClose }) {
         <Field label="الاسم"><input className={F} required value={f.name} onChange={set('name')} /></Field>
         <Field label="المسمّى"><input className={F} value={f.title} onChange={set('title')} placeholder="مستشار مبيعات" /></Field>
         <Field label="البريد (لتسجيل الدخول)"><input className={`${F} mono`} type="email" dir="ltr" required={isNew} value={f.email} onChange={set('email')} /></Field>
-        <Field label="الهاتف"><input className={`${F} mono`} dir="ltr" value={f.phone} onChange={set('phone')} /></Field>
+        <Field label="الهاتف"><PhoneField value={f.phone} onChange={(v) => setF((s) => ({ ...s, phone: v }))} required={false} /></Field>
         <Field label="الدور"><select className={F} value={f.role} onChange={set('role')}>{Object.entries(ROLE_AR).map(([k, t]) => <option key={k} value={k}>{t}</option>)}</select></Field>
         <Field label="الصورة">
           <div className="flex items-center gap-2.5">
