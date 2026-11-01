@@ -30,7 +30,7 @@ const icon = (m) => L.divIcon({
  * interactive, scrollZoom, zoomControl, onClick({lat,lng}), onNavigate(href) for [data-href] elements inside popups,
  * apiRef -> { map, flyTo(pos, zoom), openPopup(id) }. Children are overlays: give them position:absolute and zIndex 900.
  */
-export function MapView({ center = ERBIL, zoom = 12, bounds, maxZoom = 16, markers = [], lines = [], interactive = true, scrollZoom = true, zoomControl = true, onClick, onNavigate, apiRef, style, height = 400, children }) {
+export function MapView({ center = ERBIL, zoom = 12, bounds, maxZoom = 16, minZoom, maxBounds, markers = [], lines = [], interactive = true, scrollZoom = true, zoomControl = true, onClick, onNavigate, apiRef, style, height = 400, children }) {
   const el = useRef(null);
   const mapRef = useRef(null);
   const mk = useRef(new Map());
@@ -40,10 +40,13 @@ export function MapView({ center = ERBIL, zoom = 12, bounds, maxZoom = 16, marke
 
   useEffect(() => {
     const node = el.current;
+    const mb = (maxBounds || []).filter(hasPos);
     const map = L.map(node, {
       zoomControl: false, attributionControl: false, boxZoom: false,
       dragging: interactive, scrollWheelZoom: interactive && scrollZoom, doubleClickZoom: interactive, touchZoom: interactive, keyboard: interactive,
       center: [center.lat, center.lng], zoom,
+      ...(minZoom != null ? { minZoom } : {}),
+      ...(mb.length ? { maxBounds: L.latLngBounds(mb.map((pt) => [+pt.lat, +pt.lng])).pad(0.02), maxBoundsViscosity: 1 } : {}),
     });
     L.tileLayer(TILE_URL, { attribution: TILE_ATTR, maxZoom: 19 }).addTo(map);
     L.control.attribution({ prefix: false, position: 'bottomleft' }).addTo(map);

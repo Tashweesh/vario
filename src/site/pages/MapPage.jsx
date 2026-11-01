@@ -4,7 +4,7 @@ import { useSite } from '../SiteData.jsx';
 import { useDocTitle } from '../../lib/hooks.js';
 import { Icon, Img, useToast } from '../../components/ui.jsx';
 import { DealTag, Facts, LeadModal, Price, SaveBtn } from '../parts.jsx';
-import { MapView, esc } from '../../components/MapView.jsx';
+import { MapView, esc, hasPos } from '../../components/MapView.jsx';
 
 // Property map explorer — ported 1:1 from the design reference (pages/map.js): toolbar (Buy | Rent, categories with
 // counts, "compounds & towers" overlay, budget, area, part of the city, map/list switch), results panel with active
@@ -120,10 +120,13 @@ export function MapExplorer({ embedded = false, height = 560 }) {
   const zoneFocus = (z) => { if (!z) return fitAll(); const as = S.areas.filter((a) => zoneOf(a) === z); if (!as.length) return; flyTo({ lat: as.reduce((s, a) => s + a.pos.lat, 0) / as.length, lng: as.reduce((s, a) => s + a.pos.lng, 0) / as.length }, 13); rebase(); };
   const focus = (l) => { if (view === 'list') setView('map'); setTimeout(() => { flyTo(l.pos, 16); setSel(l.id); rebase(); }, view === 'list' ? 120 : 0); };
   const clearBounds = () => { setBounds(null); api.current?.setBase?.(); };
+  // Keep the map within the Erbil governorate: a padded box around every area, so it can't pan to other provinces or zoom out past Erbil.
+  const erbilBounds = useMemo(() => { const pts = S.areas.map((a) => a.pos).filter(hasPos); if (!pts.length) return null; const la = pts.map((p) => p.lat), ln = pts.map((p) => p.lng), pad = 0.12; return [{ lat: Math.min(...la) - pad, lng: Math.min(...ln) - pad }, { lat: Math.max(...la) + pad, lng: Math.max(...ln) + pad }]; }, [S.areas]);
+
 
   // pins by zoom level (reference: far → main districts + "quarters of …" cluster per part of the city · mid → every
   // neighbourhood · list → listing pins + project pins). "Main" districts = the areas chosen for the home page in the CMS.
-  const lvl = area || pj ? 'list' : zoom < FAR_ZOOM ? 'far' : zoom < FAR_ZOOM + 1 ? 'mid' : 'list';
+  const lvl = 'list'; // overview district/zone bubbles removed — map shows listing pins only; navigate via search + 'ابحث بهالمنطقة'
   const pinned = items.filter((i) => i.hasPin);
   const mainIds = new Set(S.homeAreas.map((a) => a.id));
   let markers;
@@ -134,13 +137,6 @@ export function MapExplorer({ embedded = false, height = 560 }) {
     const bubble = (a, n, small) => ({ id: 'A:' + a.id, kind: 'area' + (small ? ' sm' : ''), lat: a.pos.lat, lng: a.pos.lng, html: `${esc(a.short)} <b>${n}</b>`, onClick: () => { flyTo(a.pos, 14); rebase(); } });
     if (lvl === 'far') {
       markers = withCount.filter(([a, n]) => mainIds.has(a.id) && (n || !any)).map(([a, n]) => bubble(a, n));
-      ZONES.forEach(([z, name]) => {
-        const rest = withCount.filter(([a]) => !mainIds.has(a.id) && zoneOf(a) === z);
-        const n = rest.reduce((s, [, k]) => s + k, 0);
-        if (!rest.length || (any && !n)) return;
-        const c = { lat: rest.reduce((s, [a]) => s + a.pos.lat, 0) / rest.length, lng: rest.reduce((s, [a]) => s + a.pos.lng, 0) / rest.length };
-        markers.push({ id: 'Z:' + z, kind: 'zone', lat: c.lat, lng: c.lng, html: `${z === 'c' ? 'أحياء المركز' : `أحياء ${name}`} <b>${n}</b>`, onClick: () => zoneFocus(z) });
-      });
     } else {
       markers = withCount.filter(([, n]) => n || !any).sort(([a], [b]) => (mainIds.has(b.id) ? 1 : 0) - (mainIds.has(a.id) ? 1 : 0)).map(([a, n]) => bubble(a, n, !mainIds.has(a.id)));
     }
@@ -162,14 +158,13 @@ export function MapExplorer({ embedded = false, height = 560 }) {
   const viewBounds = cur ? [cur.pos, ...pinned.map((i) => i.pos)] : S.areas.map((a) => a.pos);
   const selItem = sel && !sel.startsWith('P:') ? S.byId(sel) : null;
   const selProj = sel && sel.startsWith('P:') ? S.projById(sel.slice(2)) : null;
-  const hint = lvl === 'far' ? 'المناطق وأجزاء المدينة — كبّر حتى تشوف الأحياء' : lvl === 'mid' ? 'الأحياء — كبّر أو اضغط وحدة حتى تشوف العروض' : '';
+  const hint = lvl === 'far' ? 'المناطق — كبّر أو اضغط وحدة حتى تشوف العروض' : lvl === 'mid' ? 'كبّر أو اضغط منطقة حتى تشوف العروض' : '';
 
   const activeChips = (small) => {
     const c = `chip chip-sm !bg-paper-2 !border-transparent ${small ? '!h-[30px] !px-2.5 flex-none' : ''}`;
     return (
       <>
         {bounds && <button type="button" className={c} onClick={clearBounds}><Icon name="map" size={13} />منطقة الخريطة<Icon name="close" size={12} /></button>}
-        {zone && <button type="button" className={c} onClick={() => { setQ({ zone: '' }); fitAll(); }}>{zoneName(zone)}<Icon name="close" size={12} /></button>}
         {cur && <button type="button" className={c} onClick={() => { setQ({ area: '' }); if (zone) zoneFocus(zone); else fitAll(); }}>{cur.short}<Icon name="close" size={12} /></button>}
         {curProj && <button type="button" className={c} onClick={() => setQ({ pj: '' })}>{curProj.name}<Icon name="close" size={12} /></button>}
       </>
@@ -238,14 +233,8 @@ export function MapExplorer({ embedded = false, height = 560 }) {
           </select>
           <select className="field !h-[40px] !text-[13.5px] !w-auto !rounded-[10px] flex-1 lg:flex-none lg:w-[190px] min-w-0 order-4 lg:order-none" value={area} onChange={(e) => { const id = e.target.value; setQ({ area: id, zone: id && zone && areaZone(id) !== zone ? '' : zone, pj: pj && id && S.projById(pj)?.area_id !== id ? '' : pj }); clearBounds(); closePrev(); if (id) { const a = S.areaById(id); if (a) { flyTo(a.pos, 14); rebase(); } } else if (zone) zoneFocus(zone); else fitAll(); }} aria-label="المنطقة">
             <option value="">كل أربيل</option>
-            {ZONES.map(([z, name]) => { const as = S.areas.filter((a) => zoneOf(a) === z); return as.length ? <optgroup key={z} label={name}>{as.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</optgroup> : null; })}
+            {S.areas.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
           </select>
-          <div className="flex items-center gap-1.5 overflow-x-auto no-sb order-5 lg:order-none basis-full -mx-4 px-4 lg:mx-0 lg:px-0">
-            <span className="lbl flex-none me-1 hidden sm:inline">جزء المدينة</span>
-            {[['', 'كل أربيل'], ...ZONES].map(([z, l]) => (
-              <button key={z} type="button" className="chip chip-sm !h-[30px] flex-none" aria-pressed={zone === z} onClick={() => { setQ({ zone: z, area: z && area && areaZone(area) !== z ? '' : area, pj: z && pj && areaZone(S.projById(pj)?.area_id) !== z ? '' : pj }); clearBounds(); closePrev(); zoneFocus(z); }}>{l} <span className={`num ${zone === z ? 'opacity-70' : 'text-ink-400'}`}>{countZone(z)}</span></button>
-            ))}
-          </div>
           {embedded
             ? <div className="flex items-center gap-2 flex-none order-2 ms-auto"><span className="text-[13px] hidden sm:inline"><b className="num">{items.length}</b> <span className="text-ink-600">{cl}</span></span>{viewSeg('')}</div>
             : viewSeg('lg:hidden order-2 ms-auto')}
@@ -259,7 +248,7 @@ export function MapExplorer({ embedded = false, height = 560 }) {
           : <aside className={`${view === 'list' ? 'flex' : 'hidden lg:flex'} flex-col border-e hair bg-white lg:sticky lg:top-[72px]`} style={{ height: 'var(--mh)' }}>{listPanel}</aside>}
 
         <div className={`relative ${view === 'list' ? (embedded ? 'hidden' : 'hidden lg:block') : ''}`} style={{ height: 'var(--mh)', isolation: 'isolate' }}>
-          <MapView height="auto" style={{ position: 'absolute', inset: 0 }} bounds={viewBounds} zoom={14} maxZoom={15} markers={markers} apiRef={api}>
+          <MapView height="auto" style={{ position: 'absolute', inset: 0 }} bounds={viewBounds} zoom={14} maxZoom={15} minZoom={9} maxBounds={erbilBounds} markers={markers} apiRef={api}>
             {moved && (
               <button type="button" className="absolute top-4 left-1/2 -translate-x-1/2 btn btn-ink btn-sm shadow-pop transition-all" style={{ zIndex: 1100 }} onClick={() => { const m = api.current?.map; if (!m) return; setBounds(m.getBounds()); setQ({ area: '' }); api.current.setBase(); toast('نعرضلك العقارات بهالجزء من الخريطة'); }}><Icon name="search" size={15} />ابحث بهالمنطقة</button>
             )}
