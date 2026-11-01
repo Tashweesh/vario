@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../lib/auth.jsx';
 import { ROLE_AR, STATUS } from '../lib/format.js';
-import { Chip, Icon, Img, LogoMark, Spinner } from '../components/ui.jsx';
+import { Btn, Chip, Field, Icon, Img, LogoMark, Modal, Spinner, useToast } from '../components/ui.jsx';
+import { friendlyError, updatePassword, verifyPassword, signOutOtherSessions } from '../lib/supabase.js';
 
 // Staff shell ported from the design reference (os/shell.js): workspace rail · section sidebar · top bar · body,
 // plus the mobile bottom bar and menu drawer. UI kit classes come from src/ref.css (os-card, os-tbl, osb, os-tab …).
@@ -42,8 +43,64 @@ export function Av({ src, name = '', size = 28, className = '' }) {
   return <span className={`inline-flex items-center justify-center rounded-full flex-none text-white font-semibold ${className}`} style={{ width: size, height: size, background: '#1D1E22', fontSize: Math.round(size * 0.38) }} dir="ltr">{(name || '?').trim()[0]}</span>;
 }
 
+// Password strength for the change-password form: at least 8 chars with a letter and a number.
+const pwStrong = (v) => v.length >= 8 && /[A-Za-z]/.test(v) && /\d/.test(v);
+
+// Change-password dialog, opened from the user menu. Confirms the current password, sets the new one
+// (lock-free request so the button can't hang), and revokes other devices' sessions.
+function ChangePasswordModal({ me, A, onClose }) {
+  const toast = useToast();
+  const [f, setF] = useState({ cur: '', next: '', confirm: '' });
+  const [show, setShow] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const set = (k) => (e) => setF((s) => ({ ...s, [k]: e.target.value }));
+  const email = me.email || A.session?.user?.email;
+  const strong = pwStrong(f.next);
+  const submit = async (e) => {
+    e.preventDefault();
+    if (!strong) return toast('كلمة المرور الجديدة لازم تكون 8 أحرف على الأقل وتحتوي حرفاً ورقماً', 'error');
+    if (f.next !== f.confirm) return toast('كلمتا السر غير متطابقتين', 'error');
+    if (f.next === f.cur) return toast('كلمة المرور الجديدة لازم تكون مختلفة عن الحالية', 'error');
+    const token = A.session?.access_token;
+    if (!token || !email) return toast('انتهت صلاحية الجلسة — سجّل الدخول من جديد', 'error');
+    setBusy(true);
+    try {
+      const ok = await verifyPassword(email, f.cur);
+      if (!ok) throw new Error('كلمة المرور الحالية غير صحيحة');
+      await updatePassword(token, f.next);
+      await signOutOtherSessions(token);
+      toast('تم تغيير كلمة المرور — سُجّل خروج الأجهزة الأخرى');
+      onClose();
+    } catch (err) { toast(friendlyError(err), 'error'); } finally { setBusy(false); }
+  };
+  const field = (k, label, auto) => (
+    <Field label={label}>
+      <div className="relative">
+        <input className="field !pe-11" type={show ? 'text' : 'password'} required dir="ltr" autoComplete={auto} value={f[k]} onChange={set(k)} />
+        {k === 'cur' && <button type="button" tabIndex={-1} aria-label={show ? 'إخفاء' : 'إظهار'} className="absolute end-2 top-1/2 -translate-y-1/2 icon-btn !w-8 !h-8 text-ink-400" onClick={() => setShow((v) => !v)}><Icon name="eye" size={17} /></button>}
+      </div>
+    </Field>
+  );
+  return (
+    <Modal title="تغيير كلمة المرور" sub="لحسابك الحالي — نطلب كلمة المرور الحالية للتأكيد" onClose={onClose} width={480}
+      footer={<><Btn kind="line" onClick={onClose}>إلغاء</Btn><Btn kind="red" className="flex-1" disabled={busy} onClick={submit}><Icon name="lock" size={16} />{busy ? '…' : 'تحديث كلمة المرور'}</Btn></>}>
+      <form onSubmit={submit} className="grid gap-4">
+        <div className="text-[12.5px] text-ink-500" dir="ltr">{email}</div>
+        {field('cur', 'كلمة المرور الحالية', 'current-password')}
+        {field('next', 'كلمة المرور الجديدة', 'new-password')}
+        {field('confirm', 'تأكيد كلمة المرور الجديدة', 'new-password')}
+        <div className={`text-[12.5px] ${f.next ? (strong ? 'text-ok' : 'text-red') : 'text-ink-500'}`}>
+          {f.next ? (strong ? '✓ كلمة مرور قوية' : 'لازم 8 أحرف على الأقل، وتحتوي حرفاً ورقماً') : '8 أحرف على الأقل، وتحتوي حرفاً ورقماً'}
+        </div>
+        <button type="submit" className="hidden" aria-hidden="true" />
+      </form>
+    </Modal>
+  );
+}
+
 function UserMenu({ me, A, nav, children, className = '', up = false }) {
   const [open, setOpen] = useState(false);
+  const [pw, setPw] = useState(false);
   const ref = useRef(null);
   useEffect(() => {
     if (!open) return;
@@ -58,9 +115,11 @@ function UserMenu({ me, A, nav, children, className = '', up = false }) {
         <div role="menu" className="absolute end-0 min-w-[220px] bg-white border hair rounded-[14px] shadow-pop p-1.5 z-50" style={up ? { bottom: '100%', marginBottom: 6 } : { top: '100%', marginTop: 6 }}>
           <div className="px-3 pt-2 pb-2 border-b hair mb-1"><div className="text-[13.5px] font-semibold clamp-1">{me.name}</div><div className="text-[12px] text-ink-500 clamp-1" dir="ltr">{me.email}</div></div>
           <button type="button" role="menuitem" className="os-nav w-full" onClick={() => { setOpen(false); nav('/'); }}><Icon name="globe" size={17} /><span className="flex-1">عرض الموقع</span></button>
+          <button type="button" role="menuitem" className="os-nav w-full" onClick={() => { setOpen(false); setPw(true); }}><Icon name="lock" size={17} /><span className="flex-1">تغيير كلمة المرور</span></button>
           <button type="button" role="menuitem" className="os-nav w-full text-red" onClick={async () => { setOpen(false); await A.signOut(); nav('/login'); }}><Icon name="door" size={17} /><span className="flex-1">تسجيل الخروج</span></button>
         </div>
       )}
+      {pw && <ChangePasswordModal me={me} A={A} onClose={() => setPw(false)} />}
     </div>
   );
 }

@@ -43,6 +43,34 @@ export async function updatePassword(accessToken, password) {
   return body;
 }
 
+// Check a password for the given email without touching the current session (used to confirm the
+// current password before a change). Returns true if correct, false if wrong, throws on network error.
+export async function verifyPassword(email, password) {
+  let res;
+  try {
+    res = await fetch(`${url}/auth/v1/token?grant_type=password`, {
+      method: 'POST',
+      headers: { apikey: key, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+  } catch (e) { throw new Error(friendlyError(e)); }
+  if (res.ok) return true;
+  const body = await res.json().catch(() => ({}));
+  const code = body.error_code || '';
+  if (res.status === 400 || /invalid|credentials|grant/i.test(code)) return false;
+  throw new Error(friendlyError({ message: body.msg || body.error_description || body.error || 'تعذّر التحقق', code }));
+}
+
+// Revoke sessions on other devices after a password change (keeps the current one). Best-effort.
+export async function signOutOtherSessions(accessToken) {
+  try {
+    await fetch(`${url}/auth/v1/logout?scope=others`, {
+      method: 'POST',
+      headers: { apikey: key, Authorization: `Bearer ${accessToken}` },
+    });
+  } catch { /* non-fatal */ }
+}
+
 export const BUCKET = 'media';
 
 export async function uploadMedia(file, folder) {
