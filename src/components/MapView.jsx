@@ -30,7 +30,7 @@ const icon = (m) => L.divIcon({
  * interactive, scrollZoom, zoomControl, onClick({lat,lng}), onNavigate(href) for [data-href] elements inside popups,
  * apiRef -> { map, flyTo(pos, zoom), openPopup(id) }. Children are overlays: give them position:absolute and zIndex 900.
  */
-export function MapView({ center = ERBIL, zoom = 12, bounds, maxZoom = 16, minZoom, maxBounds, markers = [], lines = [], interactive = true, scrollZoom = true, zoomControl = true, onClick, onNavigate, apiRef, style, height = 400, children }) {
+export function MapView({ center = ERBIL, zoom = 12, bounds, maxZoom = 16, minZoom, maxBounds, markers = [], lines = [], interactive = true, scrollZoom = true, pageScroll = false, zoomControl = true, onClick, onNavigate, apiRef, style, height = 400, children }) {
   const el = useRef(null);
   const mapRef = useRef(null);
   const mk = useRef(new Map());
@@ -51,6 +51,9 @@ export function MapView({ center = ERBIL, zoom = 12, bounds, maxZoom = 16, minZo
     L.tileLayer(TILE_URL, { attribution: TILE_ATTR, maxZoom: 19 }).addTo(map);
     L.control.attribution({ prefix: false, position: 'bottomleft' }).addTo(map);
     if (interactive && zoomControl) L.control.zoom({ position: 'topleft', zoomInTitle: 'تكبير', zoomOutTitle: 'تصغير' }).addTo(map);
+    // On touch devices: let a one-finger vertical swipe scroll the page; pan/zoom the map with two fingers (tap still works).
+    const coarse = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+    if (pageScroll && coarse) { map.dragging.disable(); node.style.touchAction = 'pan-y'; }
     lineLayer.current = L.layerGroup().addTo(map);
     map.on('click', (e) => cb.current.onClick?.({ lat: +e.latlng.lat.toFixed(6), lng: +e.latlng.lng.toFixed(6) }));
     const onDom = (e) => {

@@ -248,7 +248,7 @@ export function MapExplorer({ embedded = false, height = 560 }) {
           : <aside className={`${view === 'list' ? 'flex' : 'hidden lg:flex'} flex-col border-e hair bg-white lg:sticky lg:top-[72px]`} style={{ height: 'var(--mh)' }}>{listPanel}</aside>}
 
         <div className={`relative ${view === 'list' ? (embedded ? 'hidden' : 'hidden lg:block') : ''}`} style={{ height: 'var(--mh)', isolation: 'isolate' }}>
-          <MapView height="auto" style={{ position: 'absolute', inset: 0 }} bounds={viewBounds} zoom={14} maxZoom={15} minZoom={9} maxBounds={erbilBounds} markers={markers} apiRef={api}>
+          <MapView height="auto" style={{ position: 'absolute', inset: 0 }} bounds={viewBounds} zoom={14} maxZoom={15} minZoom={9} maxBounds={erbilBounds} pageScroll={embedded} markers={markers} apiRef={api}>
             {moved && (
               <button type="button" className="absolute top-4 left-1/2 -translate-x-1/2 btn btn-ink btn-sm shadow-pop transition-all" style={{ zIndex: 1100 }} onClick={() => { const m = api.current?.map; if (!m) return; setBounds(m.getBounds()); setQ({ area: '' }); api.current.setBase(); toast('نعرضلك العقارات بهالجزء من الخريطة'); }}><Icon name="search" size={15} />ابحث بهالمنطقة</button>
             )}
