@@ -10,10 +10,12 @@ export function AuthProvider({ children }) {
   const [session, setSession] = useState(undefined);
   const [me, setMe] = useState(undefined);
 
-  const loadMe = useCallback(async (s) => {
+  // background=true: a refresh that must not kick the user out on a transient error (keeps the current profile).
+  const loadMe = useCallback(async (s, background = false) => {
     if (!s) return setMe(null);
     const { data, error } = await supabase.rpc('me');
-    setMe(error ? null : data?.[0] || null);
+    if (error) { if (!background) setMe(null); return; }
+    setMe(data?.[0] || null);
   }, []);
 
   useEffect(() => {
@@ -21,7 +23,10 @@ export function AuthProvider({ children }) {
     const { data: sub } = supabase.auth.onAuthStateChange((evt, s) => {
       setSession(s);
       // defer: supabase calls inside this callback would wait on the auth lock it holds
-      if (evt === 'SIGNED_IN' || evt === 'SIGNED_OUT' || evt === 'USER_UPDATED') { setMe(undefined); setTimeout(() => loadMe(s), 0); }
+      if (evt === 'SIGNED_OUT') { setMe(null); return; }
+      // SIGNED_IN also fires every time the tab regains focus. Resetting `me` would flip `loading`, unmount the whole
+      // app behind a spinner and drop any unsaved form — so refresh the profile in the background instead.
+      if (evt === 'SIGNED_IN' || evt === 'USER_UPDATED' || evt === 'TOKEN_REFRESHED') setTimeout(() => loadMe(s, true), 0);
     });
     return () => sub.subscription.unsubscribe();
   }, [loadMe]);
@@ -30,7 +35,7 @@ export function AuthProvider({ children }) {
   const value = {
     session, me, loading: session === undefined || (session && me === undefined),
     isAdmin: role === 'admin', isEditor: role === 'admin' || role === 'editor', isAgent: role === 'agent',
-    refreshMe: () => loadMe(session),
+    refreshMe: () => loadMe(session, true),
     signOut: () => supabase.auth.signOut(),
   };
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
