@@ -52,7 +52,7 @@ function AreaModal({ a, onClose }) {
     e.preventDefault();
     setBusy(true);
     try {
-      const row = { name: f.name.trim(), short: f.short.trim() || f.name.trim(), vibe: f.vibe, description: f.description, rent: +f.rent || 0, img: f.img || null, lat: +f.lat, lng: +f.lng, tags: f.tagsText.split(/[،,]/).map((t) => t.trim()).filter(Boolean), dna: Object.fromEntries(Object.keys(DNA).map((k) => [k, +f.dna[k]])) };
+      const row = { name: f.name.trim(), short: f.short.trim() || f.name.trim(), vibe: f.vibe, description: f.description, img: f.img || null, lat: +f.lat, lng: +f.lng, tags: f.tagsText.split(/[،,]/).map((t) => t.trim()).filter(Boolean), dna: Object.fromEntries(Object.keys(DNA).map((k) => [k, +f.dna[k]])) };
       if (isNew) {
         const id = f.id.trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
         if (!id) throw new Error('أدخل معرّف المنطقة بالإنجليزي (مثلاً dream-city)');
@@ -79,7 +79,7 @@ function AreaModal({ a, onClose }) {
         <Field label="وصف بسطر" className={isNew ? '' : 'sm:col-span-2'}><input className={F} value={f.vibe} onChange={set('vibe')} /></Field>
         <Field label="نص دليل المنطقة" className="sm:col-span-2"><textarea className="field !text-[13.5px]" rows={3} value={f.description} onChange={set('description')} /></Field>
         <Field label="سعر الطلب (دولار / م²)" hint="يُحسب تلقائياً من متوسط سعر المتر للعقارات المعروضة للبيع في المنطقة"><div className={`${F} num flex items-center bg-paper-2 text-ink-600`} dir="ltr">{usd(f.ppm)}<span className="text-ink-400 ms-1">/m²</span></div></Field>
-        <Field label="الإيجار (دولار / م² / شهر)"><input className={`${F} num`} type="number" min="0" step="0.1" dir="ltr" value={f.rent} onChange={set('rent')} /></Field>
+        <Field label="الإيجار (دولار / م² / شهر)" hint="يُحسب تلقائياً من متوسط إيجار المتر للعقارات المعروضة للإيجار في المنطقة"><div className={`${F} num flex items-center bg-paper-2 text-ink-600`} dir="ltr">${(+f.rent || 0).toFixed(1)}<span className="text-ink-400 ms-1">/م²/شهر</span></div></Field>
         <Field label="الوسوم (افصل بفاصلة)" className="sm:col-span-2"><input className={F} value={f.tagsText} onChange={set('tagsText')} placeholder="عوائل، مدارس، هادئ" /></Field>
         <Field label="الصورة" className="sm:col-span-2">
           <div className="flex items-center gap-3">
